@@ -6,7 +6,7 @@ import io.dapr.actors.runtime.ActorRuntimeContext
 import io.dapr.client.DaprClientBuilder
 import io.micrometer.core.instrument.Metrics
 
-class MallActorImpl(runtimeContext: ActorRuntimeContext<MallActorImpl>, val actorId: ActorId) :
+class MallActorImpl(runtimeContext: ActorRuntimeContext<MallActorImpl>, actorId: ActorId) :
   AbstractActor(runtimeContext, actorId), MallActor {
 
   val client = DaprClientBuilder().build()
