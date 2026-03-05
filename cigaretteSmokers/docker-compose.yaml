@@ -1,0 +1,211 @@
+services:
+  influxdb:
+    image: influxdb:2.7
+    ports:
+      - "8086:8086"
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=adminpassword
+      - DOCKER_INFLUXDB_INIT_ORG=dapr
+      - DOCKER_INFLUXDB_INIT_BUCKET=bucket
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=auth
+    networks:
+      - influx-net
+
+  redis:
+    image: redis:8.2.4-alpine
+    command: ["redis-server", "--save", ""]
+    networks:
+      - broker-net
+
+  # Arbiter
+  redis-arbiter:
+    image: redis:8.2.4-alpine
+    networks:
+      - cluster-arbiter
+  placement-arbiter:
+    image: daprio/placement:1.16.0
+    command: ["./placement", "--port", "50006"]
+    networks:
+      - cluster-arbiter
+  arbiter-service:
+    build: .
+    ports:
+      - "3500:3500"
+    environment:
+      - ROLE=arbiter
+      - DAPR_HTTP_ENDPOINT=http://arbiter-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://arbiter-sidecar:50001
+    networks:
+      - cluster-arbiter
+      - influx-net
+    depends_on:
+      - redis
+      - redis-arbiter
+      - placement-arbiter
+  arbiter-sidecar:
+    image: daprio/daprd:1.16.0
+    command:
+      [
+        "./daprd",
+        "--app-id", "arbiter-service",
+        "--app-port", "3000",
+        "--app-channel-address", "arbiter-service",
+        "--placement-host-address", "placement-arbiter:50006",
+        "--resources-path", "/components",
+        "--log-level", "warn",
+      ]
+    volumes:
+      - ./redis/components-arbiter:/components
+    networks:
+      - broker-net
+      - cluster-arbiter
+    depends_on:
+      - arbiter-service
+
+  # smoker 0
+  redis-c0:
+    image: redis:8.2.4-alpine
+    networks:
+      - cluster-c0
+  placement-c0:
+    image: daprio/placement:1.16.0
+    command: ["./placement", "--port", "50006"]
+    networks:
+      - cluster-c0
+  smoker-0-service:
+    build: .
+    ports:
+      - "3501:3500"
+    environment:
+      - ROLE=smoker
+      - DAPR_HTTP_ENDPOINT=http://smoker-0-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://smoker-0-sidecar:50001
+      - SMOKER_ID=smoker-0
+    networks:
+      - cluster-c0
+      - influx-net
+    depends_on:
+      - redis
+      - redis-c0
+      - placement-c0
+  smoker-0-sidecar:
+    image: daprio/daprd:1.16.0
+    command:
+      [
+        "./daprd",
+        "--app-id", "smoker-0-service",
+        "--app-port", "3000",
+        "--app-channel-address", "smoker-0-service",
+        "--placement-host-address", "placement-c0:50006",
+        "--resources-path", "/components",
+        "--log-level", "warn",
+      ]
+    volumes:
+      - ./redis/components-smoker-0:/components
+    networks:
+      - broker-net
+      - cluster-c0
+    depends_on:
+      - smoker-0-service
+
+  # smoker 1
+  redis-c1:
+    image: redis:8.2.4-alpine
+    networks:
+      - cluster-c1
+  placement-c1:
+    image: daprio/placement:1.16.0
+    command: ["./placement", "--port", "50006"]
+    networks:
+      - cluster-c1
+  smoker-1-service:
+    build: .
+    ports:
+      - "3502:3500"
+    environment:
+      - ROLE=smoker
+      - DAPR_HTTP_ENDPOINT=http://smoker-1-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://smoker-1-sidecar:50001
+      - SMOKER_ID=smoker-1
+    networks:
+      - influx-net
+      - cluster-c1
+    depends_on:
+      - redis
+      - redis-c1
+      - placement-c1
+  smoker-1-sidecar:
+    image: daprio/daprd:1.16.0
+    command:
+      [
+        "./daprd",
+        "--app-id", "smoker-1-service",
+        "--app-port", "3000",
+        "--app-channel-address", "smoker-1-service",
+        "--placement-host-address", "placement-c1:50006",
+        "--resources-path", "/components",
+        "--log-level", "warn",
+      ]
+    volumes:
+      - ./redis/components-smoker-1:/components
+    networks:
+      - broker-net
+      - cluster-c1
+    depends_on:
+      - smoker-1-service
+
+  # smoker 2
+  redis-c2:
+    image: redis:8.2.4-alpine
+    networks:
+      - cluster-c2
+  placement-c2:
+    image: daprio/placement:1.16.0
+    command: ["./placement", "--port", "50006"]
+    networks:
+      - cluster-c2
+  smoker-2-service:
+    build: .
+    ports:
+      - "3503:3500"
+    environment:
+      - ROLE=smoker
+      - DAPR_HTTP_ENDPOINT=http://smoker-2-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://smoker-2-sidecar:50001
+      - SMOKER_ID=smoker-2
+    networks:
+      - influx-net
+      - cluster-c2
+    depends_on:
+      - redis
+      - redis-c2
+      - placement-c2
+  smoker-2-sidecar:
+    image: daprio/daprd:1.16.0
+    command:
+      [
+        "./daprd",
+        "--app-id", "smoker-2-service",
+        "--app-port", "3000",
+        "--app-channel-address", "smoker-2-service",
+        "--placement-host-address", "placement-c2:50006",
+        "--resources-path", "/components",
+        "--log-level", "warn",
+      ]
+    volumes:
+      - ./redis/components-smoker-2:/components
+    networks:
+      - broker-net
+      - cluster-c2
+    depends_on:
+      - smoker-2-service
+
+networks:
+  broker-net:
+  influx-net:
+  cluster-arbiter:
+  cluster-c0:
+  cluster-c1:
+  cluster-c2:
