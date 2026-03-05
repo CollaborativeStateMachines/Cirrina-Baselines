@@ -1,0 +1,634 @@
+services:
+  influxdb:
+    image: influxdb:2.7
+    ports:
+      - "8086:8086"
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=adminpassword
+      - DOCKER_INFLUXDB_INIT_ORG=dapr
+      - DOCKER_INFLUXDB_INIT_BUCKET=bucket
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=auth
+    networks:
+      - influx-net
+
+  redis:
+    image: redis:8.2.4-alpine
+    command: ["redis-server", "--save", ""]
+    networks:
+      - broker-net
+
+  # Mall
+  redis-mall:
+    image: redis:8.2.4-alpine
+    networks:
+      - cluster-mall
+  placement-mall:
+    image: daprio/placement:1.16.0
+    command: ["./placement", "--port", "50006"]
+    networks:
+      - cluster-mall
+  mall-service:
+    build: .
+    ports:
+      - "3500:3500"
+    environment:
+      - ROLE=mall
+      - DAPR_HTTP_ENDPOINT=http://mall-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://mall-sidecar:50001
+    networks:
+      - influx-net
+      - cluster-mall
+    depends_on:
+      - redis
+      - redis-mall
+      - placement-mall
+  mall-sidecar:
+    image: daprio/daprd:1.16.0
+    command:
+      [
+        "./daprd",
+        "--app-id", "mall-service",
+        "--app-port", "3000",
+        "--app-channel-address", "mall-service",
+        "--placement-host-address", "placement-mall:50006",
+        "--resources-path", "/components",
+        "--log-level", "warn",
+      ]
+    volumes:
+      - ./redis/components-mall:/components
+    networks:
+      - broker-net
+      - cluster-mall
+    depends_on:
+      - mall-service
+
+  # Chameneos 0
+  redis-c0:
+    image: redis:8.2.4-alpine
+    networks:
+      - cluster-c0
+  placement-c0:
+    image: daprio/placement:1.16.0
+    command: ["./placement", "--port", "50006"]
+    networks:
+      - cluster-c0
+  chameneos-0-service:
+    build: .
+    ports:
+      - "3501:3500"
+    environment:
+      - ROLE=chameneos
+      - DAPR_HTTP_ENDPOINT=http://chameneos-0-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://chameneos-0-sidecar:50001
+      - CHAMENEOS_ID=chameneos-0
+    networks:
+      - influx-net
+      - cluster-c0
+    depends_on:
+      - redis
+      - redis-c0
+      - placement-c0
+  chameneos-0-sidecar:
+    image: daprio/daprd:1.16.0
+    command:
+      [
+        "./daprd",
+        "--app-id", "chameneos-0-service",
+        "--app-port", "3000",
+        "--app-channel-address", "chameneos-0-service",
+        "--placement-host-address", "placement-c0:50006",
+        "--resources-path", "/components",
+        "--log-level", "warn",
+      ]
+    volumes:
+      - ./redis/components-chameneos-0:/components
+    networks:
+      - broker-net
+      - cluster-c0
+    depends_on:
+      - chameneos-0-service
+
+  # Chameneos 1
+  redis-c1:
+    image: redis:8.2.4-alpine
+    networks:
+      - cluster-c1
+  placement-c1:
+    image: daprio/placement:1.16.0
+    command: ["./placement", "--port", "50006"]
+    networks:
+      - cluster-c1
+  chameneos-1-service:
+    build: .
+    ports:
+      - "3502:3500"
+    environment:
+      - ROLE=chameneos
+      - DAPR_HTTP_ENDPOINT=http://chameneos-1-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://chameneos-1-sidecar:50001
+      - CHAMENEOS_ID=chameneos-1
+    networks:
+      - influx-net
+      - cluster-c1
+    depends_on:
+      - redis
+      - redis-c1
+      - placement-c1
+  chameneos-1-sidecar:
+    image: daprio/daprd:1.16.0
+    command:
+      [
+        "./daprd",
+        "--app-id", "chameneos-1-service",
+        "--app-port", "3000",
+        "--app-channel-address", "chameneos-1-service",
+        "--placement-host-address", "placement-c1:50006",
+        "--resources-path", "/components",
+        "--log-level", "warn",
+      ]
+    volumes:
+      - ./redis/components-chameneos-1:/components
+    networks:
+      - broker-net
+      - cluster-c1
+    depends_on:
+      - chameneos-1-service
+
+  # Chameneos 2
+  redis-c2:
+    image: redis:8.2.4-alpine
+    networks:
+      - cluster-c2
+  placement-c2:
+    image: daprio/placement:1.16.0
+    command: ["./placement", "--port", "50006"]
+    networks:
+      - cluster-c2
+  chameneos-2-service:
+    build: .
+    ports:
+      - "3503:3500"
+    environment:
+      - ROLE=chameneos
+      - DAPR_HTTP_ENDPOINT=http://chameneos-2-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://chameneos-2-sidecar:50001
+      - CHAMENEOS_ID=chameneos-2
+    networks:
+      - influx-net
+      - cluster-c2
+    depends_on:
+      - redis
+      - redis-c2
+      - placement-c2
+  chameneos-2-sidecar:
+    image: daprio/daprd:1.16.0
+    command:
+      [
+        "./daprd",
+        "--app-id", "chameneos-2-service",
+        "--app-port", "3000",
+        "--app-channel-address", "chameneos-2-service",
+        "--placement-host-address", "placement-c2:50006",
+        "--resources-path", "/components",
+        "--log-level", "warn",
+      ]
+    volumes:
+      - ./redis/components-chameneos-2:/components
+    networks:
+      - broker-net
+      - cluster-c2
+    depends_on:
+      - chameneos-2-service
+
+  # Chameneos 3
+  redis-c3:
+    image: redis:8.2.4-alpine
+    networks:
+      - cluster-c3
+  placement-c3:
+    image: daprio/placement:1.16.0
+    command: ["./placement", "--port", "50006"]
+    networks:
+      - cluster-c3
+  chameneos-3-service:
+    build: .
+    ports:
+      - "3504:3500"
+    environment:
+      - ROLE=chameneos
+      - DAPR_HTTP_ENDPOINT=http://chameneos-3-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://chameneos-3-sidecar:50001
+      - CHAMENEOS_ID=chameneos-3
+    networks:
+      - influx-net
+      - cluster-c3
+    depends_on:
+      - redis
+      - redis-c3
+      - placement-c3
+  chameneos-3-sidecar:
+    image: daprio/daprd:1.16.0
+    command:
+      [
+        "./daprd",
+        "--app-id", "chameneos-3-service",
+        "--app-port", "3000",
+        "--app-channel-address", "chameneos-3-service",
+        "--placement-host-address", "placement-c3:50006",
+        "--resources-path", "/components",
+        "--log-level", "warn",
+      ]
+    volumes:
+      - ./redis/components-chameneos-3:/components
+    networks:
+      - broker-net
+      - cluster-c3
+    depends_on:
+      - chameneos-3-service
+
+  # Chameneos 4
+  redis-c4:
+    image: redis:8.2.4-alpine
+    networks:
+      - cluster-c4
+  placement-c4:
+    image: daprio/placement:1.16.0
+    command: ["./placement", "--port", "50006"]
+    networks:
+      - cluster-c4
+  chameneos-4-service:
+    build: .
+    ports:
+      - "3505:3500"
+    environment:
+      - ROLE=chameneos
+      - DAPR_HTTP_ENDPOINT=http://chameneos-4-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://chameneos-4-sidecar:50001
+      - CHAMENEOS_ID=chameneos-4
+    networks:
+      - influx-net
+      - cluster-c4
+    depends_on:
+      - redis
+      - redis-c4
+      - placement-c4
+  chameneos-4-sidecar:
+    image: daprio/daprd:1.16.0
+    command:
+      [
+        "./daprd",
+        "--app-id", "chameneos-4-service",
+        "--app-port", "3000",
+        "--app-channel-address", "chameneos-4-service",
+        "--placement-host-address", "placement-c4:50006",
+        "--resources-path", "/components",
+        "--log-level", "warn",
+      ]
+    volumes:
+      - ./redis/components-chameneos-4:/components
+    networks:
+      - broker-net
+      - cluster-c4
+    depends_on:
+      - chameneos-4-service
+
+  # Chameneos 5
+  redis-c5:
+    image: redis:8.2.4-alpine
+    networks:
+      - cluster-c5
+  placement-c5:
+    image: daprio/placement:1.16.0
+    command: ["./placement", "--port", "50006"]
+    networks:
+      - cluster-c5
+  chameneos-5-service:
+    build: .
+    ports:
+      - "3506:3500"
+    environment:
+      - ROLE=chameneos
+      - DAPR_HTTP_ENDPOINT=http://chameneos-5-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://chameneos-5-sidecar:50001
+      - CHAMENEOS_ID=chameneos-5
+    networks:
+      - influx-net
+      - cluster-c5
+    depends_on:
+      - redis
+      - redis-c5
+      - placement-c5
+  chameneos-5-sidecar:
+    image: daprio/daprd:1.16.0
+    command:
+      [
+        "./daprd",
+        "--app-id", "chameneos-5-service",
+        "--app-port", "3000",
+        "--app-channel-address", "chameneos-5-service",
+        "--placement-host-address", "placement-c5:50006",
+        "--resources-path", "/components",
+        "--log-level", "warn",
+      ]
+    volumes:
+      - ./redis/components-chameneos-5:/components
+    networks:
+      - broker-net
+      - cluster-c5
+    depends_on:
+      - chameneos-5-service
+
+  # Chameneos 6
+  redis-c6:
+    image: redis:8.2.4-alpine
+    networks:
+      - cluster-c6
+  placement-c6:
+    image: daprio/placement:1.16.0
+    command: ["./placement", "--port", "50006"]
+    networks:
+      - cluster-c6
+  chameneos-6-service:
+    build: .
+    ports:
+      - "3507:3500"
+    environment:
+      - ROLE=chameneos
+      - DAPR_HTTP_ENDPOINT=http://chameneos-6-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://chameneos-6-sidecar:50001
+      - CHAMENEOS_ID=chameneos-6
+    networks:
+      - influx-net
+      - cluster-c6
+    depends_on:
+      - redis
+      - redis-c6
+      - placement-c6
+  chameneos-6-sidecar:
+    image: daprio/daprd:1.16.0
+    command:
+      [
+        "./daprd",
+        "--app-id", "chameneos-6-service",
+        "--app-port", "3000",
+        "--app-channel-address", "chameneos-6-service",
+        "--placement-host-address", "placement-c6:50006",
+        "--resources-path", "/components",
+        "--log-level", "warn",
+      ]
+    volumes:
+      - ./redis/components-chameneos-6:/components
+    networks:
+      - broker-net
+      - cluster-c6
+    depends_on:
+      - chameneos-6-service
+
+  # Chameneos 7
+  redis-c7:
+    image: redis:8.2.4-alpine
+    networks:
+      - cluster-c7
+  placement-c7:
+    image: daprio/placement:1.16.0
+    command: ["./placement", "--port", "50006"]
+    networks:
+      - cluster-c7
+  chameneos-7-service:
+    build: .
+    ports:
+      - "3508:3500"
+    environment:
+      - ROLE=chameneos
+      - DAPR_HTTP_ENDPOINT=http://chameneos-7-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://chameneos-7-sidecar:50001
+      - CHAMENEOS_ID=chameneos-7
+    networks:
+      - influx-net
+      - cluster-c7
+    depends_on:
+      - redis
+      - redis-c7
+      - placement-c7
+  chameneos-7-sidecar:
+    image: daprio/daprd:1.16.0
+    command:
+      [
+        "./daprd",
+        "--app-id", "chameneos-7-service",
+        "--app-port", "3000",
+        "--app-channel-address", "chameneos-7-service",
+        "--placement-host-address", "placement-c7:50006",
+        "--resources-path", "/components",
+        "--log-level", "warn",
+      ]
+    volumes:
+      - ./redis/components-chameneos-7:/components
+    networks:
+      - broker-net
+      - cluster-c7
+    depends_on:
+      - chameneos-7-service
+
+  # Chameneos 8
+  redis-c8:
+    image: redis:8.2.4-alpine
+    networks:
+      - cluster-c8
+  placement-c8:
+    image: daprio/placement:1.16.0
+    command: ["./placement", "--port", "50006"]
+    networks:
+      - cluster-c8
+  chameneos-8-service:
+    build: .
+    ports:
+      - "3509:3500"
+    environment:
+      - ROLE=chameneos
+      - DAPR_HTTP_ENDPOINT=http://chameneos-8-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://chameneos-8-sidecar:50001
+      - CHAMENEOS_ID=chameneos-8
+    networks:
+      - influx-net
+      - cluster-c8
+    depends_on:
+      - redis
+      - redis-c8
+      - placement-c8
+  chameneos-8-sidecar:
+    image: daprio/daprd:1.16.0
+    command:
+      [
+        "./daprd",
+        "--app-id", "chameneos-8-service",
+        "--app-port", "3000",
+        "--app-channel-address", "chameneos-8-service",
+        "--placement-host-address", "placement-c8:50006",
+        "--resources-path", "/components",
+        "--log-level", "warn",
+      ]
+    volumes:
+      - ./redis/components-chameneos-8:/components
+    networks:
+      - broker-net
+      - cluster-c8
+    depends_on:
+      - chameneos-8-service
+
+  # Chameneos 9
+  redis-c9:
+    image: redis:8.2.4-alpine
+    networks:
+      - cluster-c9
+  placement-c9:
+    image: daprio/placement:1.16.0
+    command: ["./placement", "--port", "50006"]
+    networks:
+      - cluster-c9
+  chameneos-9-service:
+    build: .
+    ports:
+      - "3510:3500"
+    environment:
+      - ROLE=chameneos
+      - DAPR_HTTP_ENDPOINT=http://chameneos-9-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://chameneos-9-sidecar:50001
+      - CHAMENEOS_ID=chameneos-9
+    networks:
+      - influx-net
+      - cluster-c9
+    depends_on:
+      - redis
+      - redis-c9
+      - placement-c9
+  chameneos-9-sidecar:
+    image: daprio/daprd:1.16.0
+    command:
+      [
+        "./daprd",
+        "--app-id", "chameneos-9-service",
+        "--app-port", "3000",
+        "--app-channel-address", "chameneos-9-service",
+        "--placement-host-address", "placement-c9:50006",
+        "--resources-path", "/components",
+        "--log-level", "warn",
+      ]
+    volumes:
+      - ./redis/components-chameneos-9:/components
+    networks:
+      - broker-net
+      - cluster-c9
+    depends_on:
+      - chameneos-9-service
+
+  # Chameneos 10
+  redis-c10:
+    image: redis:8.2.4-alpine
+    networks:
+      - cluster-c10
+  placement-c10:
+    image: daprio/placement:1.16.0
+    command: ["./placement", "--port", "50006"]
+    networks:
+      - cluster-c10
+  chameneos-10-service:
+    build: .
+    ports:
+      - "3511:3500"
+    environment:
+      - ROLE=chameneos
+      - DAPR_HTTP_ENDPOINT=http://chameneos-10-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://chameneos-10-sidecar:50001
+      - CHAMENEOS_ID=chameneos-10
+    networks:
+      - influx-net
+      - cluster-c10
+    depends_on:
+      - redis
+      - redis-c10
+      - placement-c10
+  chameneos-10-sidecar:
+    image: daprio/daprd:1.16.0
+    command:
+      [
+        "./daprd",
+        "--app-id", "chameneos-10-service",
+        "--app-port", "3000",
+        "--app-channel-address", "chameneos-10-service",
+        "--placement-host-address", "placement-c10:50006",
+        "--resources-path", "/components",
+        "--log-level", "warn",
+      ]
+    volumes:
+      - ./redis/components-chameneos-10:/components
+    networks:
+      - broker-net
+      - cluster-c10
+    depends_on:
+      - chameneos-10-service
+
+  # Chameneos 11
+  redis-c11:
+    image: redis:8.2.4-alpine
+    networks:
+      - cluster-c11
+  placement-c11:
+    image: daprio/placement:1.16.0
+    command: ["./placement", "--port", "50006"]
+    networks:
+      - cluster-c11
+  chameneos-11-service:
+    build: .
+    ports:
+      - "3512:3500"
+    environment:
+      - ROLE=chameneos
+      - DAPR_HTTP_ENDPOINT=http://chameneos-11-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://chameneos-11-sidecar:50001
+      - CHAMENEOS_ID=chameneos-11
+    networks:
+      - influx-net
+      - cluster-c11
+    depends_on:
+      - redis
+      - redis-c11
+      - placement-c11
+  chameneos-11-sidecar:
+    image: daprio/daprd:1.16.0
+    command:
+      [
+        "./daprd",
+        "--app-id", "chameneos-11-service",
+        "--app-port", "3000",
+        "--app-channel-address", "chameneos-11-service",
+        "--placement-host-address", "placement-c11:50006",
+        "--resources-path", "/components",
+        "--log-level", "warn",
+      ]
+    volumes:
+      - ./redis/components-chameneos-11:/components
+    networks:
+      - broker-net
+      - cluster-c11
+    depends_on:
+      - chameneos-11-service
+
+networks:
+  broker-net:
+  influx-net:
+  cluster-mall:
+  cluster-c0:
+  cluster-c1:
+  cluster-c2:
+  cluster-c3:
+  cluster-c4:
+  cluster-c5:
+  cluster-c6:
+  cluster-c7:
+  cluster-c8:
+  cluster-c9:
+  cluster-c10:
+  cluster-c11:
