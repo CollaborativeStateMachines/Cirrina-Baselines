@@ -6,7 +6,7 @@ import io.dapr.actors.runtime.ActorRuntimeContext
 import io.dapr.client.DaprClientBuilder
 
 class SinkActorImpl(runtimeContext: ActorRuntimeContext<SinkActorImpl>, val actorId: ActorId) :
-    AbstractActor(runtimeContext, actorId), SinkActor {
+  AbstractActor(runtimeContext, actorId), SinkActor {
 
   val client = DaprClientBuilder().build()
   var bigs = mutableListOf<String>()
@@ -41,5 +41,4 @@ class SinkActorImpl(runtimeContext: ActorRuntimeContext<SinkActorImpl>, val acto
       println("All bigs finished in ${(System.nanoTime() - startTime)/ 1_000_000} ms")
     }
   }
-
 }

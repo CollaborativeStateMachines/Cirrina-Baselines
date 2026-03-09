@@ -4,11 +4,11 @@ import io.dapr.Topic
 import io.dapr.actors.ActorId
 import io.dapr.actors.client.ActorClient
 import io.dapr.actors.client.ActorProxyBuilder
+import kotlin.collections.get
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
-import kotlin.collections.get
 
 @RestController
 @ConditionalOnProperty("app.role", havingValue = "big")
@@ -22,7 +22,6 @@ class BigSubscriber {
   @PostMapping("/neighbors")
   fun handleNeighbors(@RequestBody body: Map<String, Any>) {
     val neighbors = body["data"] as List<String>
-
     bigProxy.assignNeighbors(neighbors)
   }
 

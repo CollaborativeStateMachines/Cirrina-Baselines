@@ -1,20 +1,19 @@
 package ac.at.uibk.dps.dapr.cigarette
 
+import ac.at.uibk.dps.dapr.cigarette.arbiter.ArbiterActor
+import ac.at.uibk.dps.dapr.cigarette.arbiter.ArbiterActorImpl
+import ac.at.uibk.dps.dapr.cigarette.smoker.SmokerActorImpl
 import io.dapr.actors.ActorId
 import io.dapr.actors.client.ActorClient
 import io.dapr.actors.client.ActorProxyBuilder
 import io.dapr.actors.runtime.ActorRuntime
-import ac.at.uibk.dps.dapr.cigarette.arbiter.ArbiterActor
-import ac.at.uibk.dps.dapr.cigarette.arbiter.ArbiterActorImpl
-import ac.at.uibk.dps.dapr.cigarette.smoker.SmokerActorImpl
 import org.springframework.boot.ApplicationArguments
 import org.springframework.boot.ApplicationRunner
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 import org.springframework.stereotype.Component
 
-@SpringBootApplication
-class CigaretteSmokers
+@SpringBootApplication class CigaretteSmokers
 
 fun main(args: Array<String>) {
   val role = System.getenv("ROLE") ?: "smoker"
@@ -30,8 +29,8 @@ class AutoStarter : ApplicationRunner {
     val role = System.getenv("ROLE") ?: "arbiter"
     if (role != "arbiter") return
 
-    val proxy = ActorProxyBuilder(ArbiterActor::class.java, ActorClient())
-      .build(ActorId("arbiter-1"))
+    val proxy =
+      ActorProxyBuilder(ArbiterActor::class.java, ActorClient()).build(ActorId("arbiter-1"))
     proxy.provide()
 
     println("Arbiter provided initial ingredients")

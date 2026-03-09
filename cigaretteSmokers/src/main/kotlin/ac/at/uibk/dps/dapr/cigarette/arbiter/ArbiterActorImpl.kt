@@ -7,10 +7,8 @@ import io.dapr.client.DaprClient
 import io.dapr.client.DaprClientBuilder
 import io.micrometer.core.instrument.Metrics
 
-class ArbiterActorImpl(
-  runtimeContext: ActorRuntimeContext<ArbiterActorImpl>,
-  actorId: ActorId,
-) : AbstractActor(runtimeContext, actorId), ArbiterActor {
+class ArbiterActorImpl(runtimeContext: ActorRuntimeContext<ArbiterActorImpl>, actorId: ActorId) :
+  AbstractActor(runtimeContext, actorId), ArbiterActor {
 
   val client: DaprClient = DaprClientBuilder().build()
   val ingredients = listOf("smoker-0", "smoker-1", "smoker-2")
@@ -22,7 +20,10 @@ class ArbiterActorImpl(
     if (count == 0) {
       start = System.nanoTime()
     }
-    if (count == 20000) { done(); return }
+    if (count == 20000) {
+      done()
+      return
+    }
     count++
     counter.increment()
     val provide = ingredients.toMutableList()

@@ -12,17 +12,17 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @ConditionalOnProperty("app.role", havingValue = "mall")
 class MallSubscriber {
-    private val actorClient = ActorClient()
-    private val mallProxy = ActorProxyBuilder(MallActor::class.java, actorClient)
-        .build(ActorId("mall-1"))
+  private val actorClient = ActorClient()
+  private val mallProxy =
+    ActorProxyBuilder(MallActor::class.java, actorClient).build(ActorId("mall-1"))
 
-    @Topic(name = "request", pubsubName = "pubsub")
-    @PostMapping("/request")
-    fun handleRequest(@RequestBody body: Map<String, Any>) {
-        val data = body["data"] as? Map<*, *> ?: body
-        val requestor = data["requestor"] as? String ?: return
-        val color = (data["color"] as? Number)?.toInt() ?: return
+  @Topic(name = "request", pubsubName = "pubsub")
+  @PostMapping("/request")
+  fun handleRequest(@RequestBody body: Map<String, Any>) {
+    val data = body["data"] as? Map<*, *> ?: body
+    val requestor = data["requestor"] as? String ?: return
+    val color = (data["color"] as? Number)?.toInt() ?: return
 
-        mallProxy.requesting(MallRequest(requestor, color))
-    }
+    mallProxy.requesting(MallRequest(requestor, color))
+  }
 }
