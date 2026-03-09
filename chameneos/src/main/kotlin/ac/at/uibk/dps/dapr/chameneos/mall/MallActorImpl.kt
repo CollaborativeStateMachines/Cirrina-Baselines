@@ -4,14 +4,12 @@ import io.dapr.actors.ActorId
 import io.dapr.actors.runtime.AbstractActor
 import io.dapr.actors.runtime.ActorRuntimeContext
 import io.dapr.client.DaprClientBuilder
-import io.micrometer.core.instrument.Metrics
 
 class MallActorImpl(runtimeContext: ActorRuntimeContext<MallActorImpl>, actorId: ActorId) :
   AbstractActor(runtimeContext, actorId), MallActor {
 
   val client = DaprClientBuilder().build()
   var count = 0
-  var counter = Metrics.counter("mall.counter")
   var startTime = System.nanoTime()
   var waiting: MutableList<String> = mutableListOf()
 
@@ -22,7 +20,6 @@ class MallActorImpl(runtimeContext: ActorRuntimeContext<MallActorImpl>, actorId:
         waiting.add(request.requester)
       } else {
         count++
-        counter.increment()
         val waitingId = waiting.removeAt(0)
         client
           .publishEvent(
