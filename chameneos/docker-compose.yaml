@@ -18,17 +18,13 @@ services:
     command: ["redis-server", "--save", ""]
     networks:
       - broker-net
-
-  # Mall
-  redis-mall:
-    image: redis:8.2.4-alpine
-    networks:
-      - cluster-mall
-  placement-mall:
+  placement:
     image: daprio/placement:1.16.0
     command: ["./placement", "--port", "50006"]
     networks:
-      - cluster-mall
+      - broker-net
+
+  # Mall
   mall-service:
     build: .
     ports:
@@ -42,8 +38,7 @@ services:
       - cluster-mall
     depends_on:
       - redis
-      - redis-mall
-      - placement-mall
+      - placement
   mall-sidecar:
     image: daprio/daprd:1.16.0
     command:
@@ -52,12 +47,12 @@ services:
         "--app-id", "mall-service",
         "--app-port", "3000",
         "--app-channel-address", "mall-service",
-        "--placement-host-address", "placement-mall:50006",
+        "--placement-host-address", "placement:50006",
         "--resources-path", "/components",
         "--log-level", "warn",
       ]
     volumes:
-      - ./redis/components-mall:/components
+      - ./redis/components:/components
     networks:
       - broker-net
       - cluster-mall
@@ -65,15 +60,6 @@ services:
       - mall-service
 
   # Chameneos 0
-  redis-c0:
-    image: redis:8.2.4-alpine
-    networks:
-      - cluster-c0
-  placement-c0:
-    image: daprio/placement:1.16.0
-    command: ["./placement", "--port", "50006"]
-    networks:
-      - cluster-c0
   chameneos-0-service:
     build: .
     ports:
@@ -88,8 +74,7 @@ services:
       - cluster-c0
     depends_on:
       - redis
-      - redis-c0
-      - placement-c0
+      - placement
   chameneos-0-sidecar:
     image: daprio/daprd:1.16.0
     command:
@@ -98,12 +83,12 @@ services:
         "--app-id", "chameneos-0-service",
         "--app-port", "3000",
         "--app-channel-address", "chameneos-0-service",
-        "--placement-host-address", "placement-c0:50006",
+        "--placement-host-address", "placement:50006",
         "--resources-path", "/components",
         "--log-level", "warn",
       ]
     volumes:
-      - ./redis/components-chameneos-0:/components
+      - ./redis/components:/components
     networks:
       - broker-net
       - cluster-c0
@@ -111,15 +96,6 @@ services:
       - chameneos-0-service
 
   # Chameneos 1
-  redis-c1:
-    image: redis:8.2.4-alpine
-    networks:
-      - cluster-c1
-  placement-c1:
-    image: daprio/placement:1.16.0
-    command: ["./placement", "--port", "50006"]
-    networks:
-      - cluster-c1
   chameneos-1-service:
     build: .
     ports:
@@ -134,8 +110,7 @@ services:
       - cluster-c1
     depends_on:
       - redis
-      - redis-c1
-      - placement-c1
+      - placement
   chameneos-1-sidecar:
     image: daprio/daprd:1.16.0
     command:
@@ -144,12 +119,12 @@ services:
         "--app-id", "chameneos-1-service",
         "--app-port", "3000",
         "--app-channel-address", "chameneos-1-service",
-        "--placement-host-address", "placement-c1:50006",
+        "--placement-host-address", "placement:50006",
         "--resources-path", "/components",
         "--log-level", "warn",
       ]
     volumes:
-      - ./redis/components-chameneos-1:/components
+      - ./redis/components:/components
     networks:
       - broker-net
       - cluster-c1
@@ -157,15 +132,6 @@ services:
       - chameneos-1-service
 
   # Chameneos 2
-  redis-c2:
-    image: redis:8.2.4-alpine
-    networks:
-      - cluster-c2
-  placement-c2:
-    image: daprio/placement:1.16.0
-    command: ["./placement", "--port", "50006"]
-    networks:
-      - cluster-c2
   chameneos-2-service:
     build: .
     ports:
@@ -180,8 +146,7 @@ services:
       - cluster-c2
     depends_on:
       - redis
-      - redis-c2
-      - placement-c2
+      - placement
   chameneos-2-sidecar:
     image: daprio/daprd:1.16.0
     command:
@@ -190,12 +155,12 @@ services:
         "--app-id", "chameneos-2-service",
         "--app-port", "3000",
         "--app-channel-address", "chameneos-2-service",
-        "--placement-host-address", "placement-c2:50006",
+        "--placement-host-address", "placement:50006",
         "--resources-path", "/components",
         "--log-level", "warn",
       ]
     volumes:
-      - ./redis/components-chameneos-2:/components
+      - ./redis/components:/components
     networks:
       - broker-net
       - cluster-c2
@@ -203,15 +168,6 @@ services:
       - chameneos-2-service
 
   # Chameneos 3
-  redis-c3:
-    image: redis:8.2.4-alpine
-    networks:
-      - cluster-c3
-  placement-c3:
-    image: daprio/placement:1.16.0
-    command: ["./placement", "--port", "50006"]
-    networks:
-      - cluster-c3
   chameneos-3-service:
     build: .
     ports:
@@ -226,8 +182,7 @@ services:
       - cluster-c3
     depends_on:
       - redis
-      - redis-c3
-      - placement-c3
+      - placement
   chameneos-3-sidecar:
     image: daprio/daprd:1.16.0
     command:
@@ -236,12 +191,12 @@ services:
         "--app-id", "chameneos-3-service",
         "--app-port", "3000",
         "--app-channel-address", "chameneos-3-service",
-        "--placement-host-address", "placement-c3:50006",
+        "--placement-host-address", "placement:50006",
         "--resources-path", "/components",
         "--log-level", "warn",
       ]
     volumes:
-      - ./redis/components-chameneos-3:/components
+      - ./redis/components:/components
     networks:
       - broker-net
       - cluster-c3
@@ -249,15 +204,6 @@ services:
       - chameneos-3-service
 
   # Chameneos 4
-  redis-c4:
-    image: redis:8.2.4-alpine
-    networks:
-      - cluster-c4
-  placement-c4:
-    image: daprio/placement:1.16.0
-    command: ["./placement", "--port", "50006"]
-    networks:
-      - cluster-c4
   chameneos-4-service:
     build: .
     ports:
@@ -272,8 +218,7 @@ services:
       - cluster-c4
     depends_on:
       - redis
-      - redis-c4
-      - placement-c4
+      - placement
   chameneos-4-sidecar:
     image: daprio/daprd:1.16.0
     command:
@@ -282,12 +227,12 @@ services:
         "--app-id", "chameneos-4-service",
         "--app-port", "3000",
         "--app-channel-address", "chameneos-4-service",
-        "--placement-host-address", "placement-c4:50006",
+        "--placement-host-address", "placement:50006",
         "--resources-path", "/components",
         "--log-level", "warn",
       ]
     volumes:
-      - ./redis/components-chameneos-4:/components
+      - ./redis/components:/components
     networks:
       - broker-net
       - cluster-c4
@@ -295,15 +240,6 @@ services:
       - chameneos-4-service
 
   # Chameneos 5
-  redis-c5:
-    image: redis:8.2.4-alpine
-    networks:
-      - cluster-c5
-  placement-c5:
-    image: daprio/placement:1.16.0
-    command: ["./placement", "--port", "50006"]
-    networks:
-      - cluster-c5
   chameneos-5-service:
     build: .
     ports:
@@ -318,8 +254,7 @@ services:
       - cluster-c5
     depends_on:
       - redis
-      - redis-c5
-      - placement-c5
+      - placement
   chameneos-5-sidecar:
     image: daprio/daprd:1.16.0
     command:
@@ -328,12 +263,12 @@ services:
         "--app-id", "chameneos-5-service",
         "--app-port", "3000",
         "--app-channel-address", "chameneos-5-service",
-        "--placement-host-address", "placement-c5:50006",
+        "--placement-host-address", "placement:50006",
         "--resources-path", "/components",
         "--log-level", "warn",
       ]
     volumes:
-      - ./redis/components-chameneos-5:/components
+      - ./redis/components:/components
     networks:
       - broker-net
       - cluster-c5
@@ -341,15 +276,6 @@ services:
       - chameneos-5-service
 
   # Chameneos 6
-  redis-c6:
-    image: redis:8.2.4-alpine
-    networks:
-      - cluster-c6
-  placement-c6:
-    image: daprio/placement:1.16.0
-    command: ["./placement", "--port", "50006"]
-    networks:
-      - cluster-c6
   chameneos-6-service:
     build: .
     ports:
@@ -364,8 +290,7 @@ services:
       - cluster-c6
     depends_on:
       - redis
-      - redis-c6
-      - placement-c6
+      - placement
   chameneos-6-sidecar:
     image: daprio/daprd:1.16.0
     command:
@@ -374,12 +299,12 @@ services:
         "--app-id", "chameneos-6-service",
         "--app-port", "3000",
         "--app-channel-address", "chameneos-6-service",
-        "--placement-host-address", "placement-c6:50006",
+        "--placement-host-address", "placement:50006",
         "--resources-path", "/components",
         "--log-level", "warn",
       ]
     volumes:
-      - ./redis/components-chameneos-6:/components
+      - ./redis/components:/components
     networks:
       - broker-net
       - cluster-c6
@@ -387,15 +312,6 @@ services:
       - chameneos-6-service
 
   # Chameneos 7
-  redis-c7:
-    image: redis:8.2.4-alpine
-    networks:
-      - cluster-c7
-  placement-c7:
-    image: daprio/placement:1.16.0
-    command: ["./placement", "--port", "50006"]
-    networks:
-      - cluster-c7
   chameneos-7-service:
     build: .
     ports:
@@ -410,8 +326,7 @@ services:
       - cluster-c7
     depends_on:
       - redis
-      - redis-c7
-      - placement-c7
+      - placement
   chameneos-7-sidecar:
     image: daprio/daprd:1.16.0
     command:
@@ -420,12 +335,12 @@ services:
         "--app-id", "chameneos-7-service",
         "--app-port", "3000",
         "--app-channel-address", "chameneos-7-service",
-        "--placement-host-address", "placement-c7:50006",
+        "--placement-host-address", "placement:50006",
         "--resources-path", "/components",
         "--log-level", "warn",
       ]
     volumes:
-      - ./redis/components-chameneos-7:/components
+      - ./redis/components:/components
     networks:
       - broker-net
       - cluster-c7
@@ -433,15 +348,6 @@ services:
       - chameneos-7-service
 
   # Chameneos 8
-  redis-c8:
-    image: redis:8.2.4-alpine
-    networks:
-      - cluster-c8
-  placement-c8:
-    image: daprio/placement:1.16.0
-    command: ["./placement", "--port", "50006"]
-    networks:
-      - cluster-c8
   chameneos-8-service:
     build: .
     ports:
@@ -456,8 +362,7 @@ services:
       - cluster-c8
     depends_on:
       - redis
-      - redis-c8
-      - placement-c8
+      - placement
   chameneos-8-sidecar:
     image: daprio/daprd:1.16.0
     command:
@@ -466,12 +371,12 @@ services:
         "--app-id", "chameneos-8-service",
         "--app-port", "3000",
         "--app-channel-address", "chameneos-8-service",
-        "--placement-host-address", "placement-c8:50006",
+        "--placement-host-address", "placement:50006",
         "--resources-path", "/components",
         "--log-level", "warn",
       ]
     volumes:
-      - ./redis/components-chameneos-8:/components
+      - ./redis/components:/components
     networks:
       - broker-net
       - cluster-c8
@@ -479,15 +384,6 @@ services:
       - chameneos-8-service
 
   # Chameneos 9
-  redis-c9:
-    image: redis:8.2.4-alpine
-    networks:
-      - cluster-c9
-  placement-c9:
-    image: daprio/placement:1.16.0
-    command: ["./placement", "--port", "50006"]
-    networks:
-      - cluster-c9
   chameneos-9-service:
     build: .
     ports:
@@ -502,8 +398,7 @@ services:
       - cluster-c9
     depends_on:
       - redis
-      - redis-c9
-      - placement-c9
+      - placement
   chameneos-9-sidecar:
     image: daprio/daprd:1.16.0
     command:
@@ -512,12 +407,12 @@ services:
         "--app-id", "chameneos-9-service",
         "--app-port", "3000",
         "--app-channel-address", "chameneos-9-service",
-        "--placement-host-address", "placement-c9:50006",
+        "--placement-host-address", "placement:50006",
         "--resources-path", "/components",
         "--log-level", "warn",
       ]
     volumes:
-      - ./redis/components-chameneos-9:/components
+      - ./redis/components:/components
     networks:
       - broker-net
       - cluster-c9
@@ -525,15 +420,6 @@ services:
       - chameneos-9-service
 
   # Chameneos 10
-  redis-c10:
-    image: redis:8.2.4-alpine
-    networks:
-      - cluster-c10
-  placement-c10:
-    image: daprio/placement:1.16.0
-    command: ["./placement", "--port", "50006"]
-    networks:
-      - cluster-c10
   chameneos-10-service:
     build: .
     ports:
@@ -548,8 +434,7 @@ services:
       - cluster-c10
     depends_on:
       - redis
-      - redis-c10
-      - placement-c10
+      - placement
   chameneos-10-sidecar:
     image: daprio/daprd:1.16.0
     command:
@@ -558,12 +443,12 @@ services:
         "--app-id", "chameneos-10-service",
         "--app-port", "3000",
         "--app-channel-address", "chameneos-10-service",
-        "--placement-host-address", "placement-c10:50006",
+        "--placement-host-address", "placement:50006",
         "--resources-path", "/components",
         "--log-level", "warn",
       ]
     volumes:
-      - ./redis/components-chameneos-10:/components
+      - ./redis/components:/components
     networks:
       - broker-net
       - cluster-c10
@@ -571,15 +456,6 @@ services:
       - chameneos-10-service
 
   # Chameneos 11
-  redis-c11:
-    image: redis:8.2.4-alpine
-    networks:
-      - cluster-c11
-  placement-c11:
-    image: daprio/placement:1.16.0
-    command: ["./placement", "--port", "50006"]
-    networks:
-      - cluster-c11
   chameneos-11-service:
     build: .
     ports:
@@ -594,8 +470,7 @@ services:
       - cluster-c11
     depends_on:
       - redis
-      - redis-c11
-      - placement-c11
+      - placement
   chameneos-11-sidecar:
     image: daprio/daprd:1.16.0
     command:
@@ -604,12 +479,12 @@ services:
         "--app-id", "chameneos-11-service",
         "--app-port", "3000",
         "--app-channel-address", "chameneos-11-service",
-        "--placement-host-address", "placement-c11:50006",
+        "--placement-host-address", "placement:50006",
         "--resources-path", "/components",
         "--log-level", "warn",
       ]
     volumes:
-      - ./redis/components-chameneos-11:/components
+      - ./redis/components:/components
     networks:
       - broker-net
       - cluster-c11
