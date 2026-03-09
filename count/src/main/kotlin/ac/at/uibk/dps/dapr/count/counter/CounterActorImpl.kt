@@ -13,12 +13,14 @@ class CounterActorImpl(runtimeContext: ActorRuntimeContext<CounterActorImpl>, ac
   val client = DaprClientBuilder().build()
   var count = 0
   var startTime: Long = 0L
+  var counter: Counter = Metrics.counter("counter.count")
 
   override fun increment(time: Long) {
     if (count == 0) {
       startTime = time
     }
     count += 1
+    counter.increment()
     if (count == 50000) {
       println("$count messages in ${(System.nanoTime() - startTime)/ 1_000_000} ms")
       client.publishEvent("pubsub", "done", count).subscribe()

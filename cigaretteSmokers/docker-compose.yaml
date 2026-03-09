@@ -18,17 +18,12 @@ services:
     command: ["redis-server", "--save", ""]
     networks:
       - broker-net
-
-  # Arbiter
-  redis-arbiter:
-    image: redis:8.2.4-alpine
-    networks:
-      - cluster-arbiter
-  placement-arbiter:
+  placement:
     image: daprio/placement:1.16.0
     command: ["./placement", "--port", "50006"]
     networks:
-      - cluster-arbiter
+      - broker-net
+  # Arbiter
   arbiter-service:
     build: .
     ports:
@@ -42,8 +37,7 @@ services:
       - influx-net
     depends_on:
       - redis
-      - redis-arbiter
-      - placement-arbiter
+      - placement
   arbiter-sidecar:
     image: daprio/daprd:1.16.0
     command:
@@ -52,12 +46,12 @@ services:
         "--app-id", "arbiter-service",
         "--app-port", "3000",
         "--app-channel-address", "arbiter-service",
-        "--placement-host-address", "placement-arbiter:50006",
+        "--placement-host-address", "placement:50006",
         "--resources-path", "/components",
         "--log-level", "warn",
       ]
     volumes:
-      - ./redis/components-arbiter:/components
+      - ./redis/components:/components
     networks:
       - broker-net
       - cluster-arbiter
@@ -65,15 +59,6 @@ services:
       - arbiter-service
 
   # smoker 0
-  redis-c0:
-    image: redis:8.2.4-alpine
-    networks:
-      - cluster-c0
-  placement-c0:
-    image: daprio/placement:1.16.0
-    command: ["./placement", "--port", "50006"]
-    networks:
-      - cluster-c0
   smoker-0-service:
     build: .
     ports:
@@ -88,8 +73,7 @@ services:
       - influx-net
     depends_on:
       - redis
-      - redis-c0
-      - placement-c0
+      - placement
   smoker-0-sidecar:
     image: daprio/daprd:1.16.0
     command:
@@ -98,12 +82,12 @@ services:
         "--app-id", "smoker-0-service",
         "--app-port", "3000",
         "--app-channel-address", "smoker-0-service",
-        "--placement-host-address", "placement-c0:50006",
+        "--placement-host-address", "placement:50006",
         "--resources-path", "/components",
         "--log-level", "warn",
       ]
     volumes:
-      - ./redis/components-smoker-0:/components
+      - ./redis/components:/components
     networks:
       - broker-net
       - cluster-c0
@@ -111,15 +95,6 @@ services:
       - smoker-0-service
 
   # smoker 1
-  redis-c1:
-    image: redis:8.2.4-alpine
-    networks:
-      - cluster-c1
-  placement-c1:
-    image: daprio/placement:1.16.0
-    command: ["./placement", "--port", "50006"]
-    networks:
-      - cluster-c1
   smoker-1-service:
     build: .
     ports:
@@ -134,8 +109,7 @@ services:
       - cluster-c1
     depends_on:
       - redis
-      - redis-c1
-      - placement-c1
+      - placement
   smoker-1-sidecar:
     image: daprio/daprd:1.16.0
     command:
@@ -144,12 +118,12 @@ services:
         "--app-id", "smoker-1-service",
         "--app-port", "3000",
         "--app-channel-address", "smoker-1-service",
-        "--placement-host-address", "placement-c1:50006",
+        "--placement-host-address", "placement:50006",
         "--resources-path", "/components",
         "--log-level", "warn",
       ]
     volumes:
-      - ./redis/components-smoker-1:/components
+      - ./redis/components:/components
     networks:
       - broker-net
       - cluster-c1
@@ -157,15 +131,6 @@ services:
       - smoker-1-service
 
   # smoker 2
-  redis-c2:
-    image: redis:8.2.4-alpine
-    networks:
-      - cluster-c2
-  placement-c2:
-    image: daprio/placement:1.16.0
-    command: ["./placement", "--port", "50006"]
-    networks:
-      - cluster-c2
   smoker-2-service:
     build: .
     ports:
@@ -180,8 +145,7 @@ services:
       - cluster-c2
     depends_on:
       - redis
-      - redis-c2
-      - placement-c2
+      - placement
   smoker-2-sidecar:
     image: daprio/daprd:1.16.0
     command:
@@ -190,12 +154,12 @@ services:
         "--app-id", "smoker-2-service",
         "--app-port", "3000",
         "--app-channel-address", "smoker-2-service",
-        "--placement-host-address", "placement-c2:50006",
+        "--placement-host-address", "placement:50006",
         "--resources-path", "/components",
         "--log-level", "warn",
       ]
     volumes:
-      - ./redis/components-smoker-2:/components
+      - ./redis/components:/components
     networks:
       - broker-net
       - cluster-c2

@@ -14,7 +14,6 @@ class ArbiterActorImpl(
 
   val client: DaprClient = DaprClientBuilder().build()
   val ingredients = listOf("smoker-0", "smoker-1", "smoker-2")
-  var counter = Metrics.counter("arbiter.rounds")
   var count = 0
   var start = 0L
 
@@ -22,12 +21,11 @@ class ArbiterActorImpl(
     if (count == 0) {
       start = System.nanoTime()
     }
+    if (count == 20000) { done(); return }
     count++
-    counter.increment()
     val provide = ingredients.toMutableList()
     provide.remove(provide.random())
     client.publishEvent("pubsub", "provide", provide).subscribe()
-    if (count == 20000) { done() }
   }
 
   override fun done() {
