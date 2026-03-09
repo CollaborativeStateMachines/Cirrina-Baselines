@@ -18,16 +18,11 @@ services:
     networks:
       - broker-net
 
-  redis-a:
-    image: redis:8.2.4-alpine
-    networks:
-      - cluster-a
-
-  placement-a:
+  placement:
     image: daprio/placement:1.16.0
     command: ["./placement", "--port", "50006"]
     networks:
-      - cluster-a
+      - broker-net
 
   producer-service:
     build: .
@@ -42,8 +37,7 @@ services:
       - influx-net
     depends_on:
       - redis
-      - redis-a
-      - placement-a
+      - placement
 
   producer-sidecar:
     image: daprio/daprd:1.16.0
@@ -53,28 +47,17 @@ services:
         "--app-id", "producer-service",
         "--app-port", "3000",
         "--app-channel-address", "producer-service",
-        "--placement-host-address", "placement-a:50006",
+        "--placement-host-address", "placement:50006",
         "--resources-path", "/components",
         "--log-level", "warn",
       ]
     volumes:
-      - ./redis/components-redis-producer:/components
+      - ./redis/components:/components
     networks:
       - broker-net
       - cluster-a
     depends_on:
       - producer-service
-
-  redis-b:
-    image: redis:8.2.4-alpine
-    networks:
-      - cluster-b
-
-  placement-b:
-    image: daprio/placement:1.16.0
-    command: ["./placement", "--port", "50006"]
-    networks:
-      - cluster-b
 
   counter-service:
     build: .
@@ -87,8 +70,7 @@ services:
       - influx-net
     depends_on:
       - redis
-      - redis-b
-      - placement-b
+      - placement
 
   counter-sidecar:
     image: daprio/daprd:1.16.0
@@ -98,12 +80,12 @@ services:
         "--app-id", "counter-service",
         "--app-port", "3000",
         "--app-channel-address", "counter-service",
-        "--placement-host-address", "placement-b:50006",
+        "--placement-host-address", "placement:50006",
         "--resources-path", "/components",
         "--log-level", "info",
       ]
     volumes:
-      - ./redis/components-redis-counter:/components
+      - ./redis/components:/components
     networks:
       - broker-net
       - cluster-b

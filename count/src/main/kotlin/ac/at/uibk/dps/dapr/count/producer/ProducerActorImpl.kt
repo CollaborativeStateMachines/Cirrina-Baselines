@@ -14,7 +14,7 @@ class ProducerActorImpl(runtimeContext: ActorRuntimeContext<ProducerActorImpl>, 
 
   override fun produce() {
     startTime = System.nanoTime()
-    Flux.range(1, Int.MAX_VALUE)
+    Flux.range(1, 50000)
       .flatMap({ client.publishEvent("pubsub", "increment", startTime) }, 100)
       .subscribe()
   }
