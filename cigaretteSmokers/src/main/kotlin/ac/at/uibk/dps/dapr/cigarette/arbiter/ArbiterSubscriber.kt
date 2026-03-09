@@ -1,0 +1,23 @@
+package ac.at.uibk.dps.dapr.cigarette.arbiter
+
+import io.dapr.Topic
+import io.dapr.actors.ActorId
+import io.dapr.actors.client.ActorClient
+import io.dapr.actors.client.ActorProxyBuilder
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RestController
+
+@RestController
+@ConditionalOnProperty("app.role", havingValue = "arbiter")
+class ArbiterSubscriber {
+
+  private val arbiterProxy =
+    ActorProxyBuilder(ArbiterActor::class.java, ActorClient()).build(ActorId("arbiter-1"))
+
+  @Topic(name = "done", pubsubName = "pubsub")
+  @PostMapping("/done")
+  fun handleDone() {
+    arbiterProxy.provide()
+  }
+}

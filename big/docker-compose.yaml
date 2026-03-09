@@ -1,0 +1,509 @@
+services:
+  influxdb:
+    image: influxdb:2.7
+    ports:
+      - "8086:8086"
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=adminpassword
+      - DOCKER_INFLUXDB_INIT_ORG=dapr
+      - DOCKER_INFLUXDB_INIT_BUCKET=bucket
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=auth
+    networks:
+      - influx-net
+
+  redis:
+    image: redis:8.2.4-alpine
+    command: ["redis-server", "--save", ""]
+    networks:
+      - broker-net
+  placement:
+    image: daprio/placement:1.16.0
+    command: ["./placement", "--port", "50006"]
+    networks:
+      - broker-net
+
+  # Sink
+  sink-service:
+    build: .
+    ports:
+      - "3500:3500"
+    environment:
+      - ROLE=sink
+      - DAPR_HTTP_ENDPOINT=http://sink-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://sink-sidecar:50001
+    networks:
+      - cluster-sink
+      - influx-net
+    depends_on:
+      - redis
+      - placement
+  sink-sidecar:
+    image: daprio/daprd:1.16.0
+    command:
+      [
+        "./daprd",
+        "--app-id", "sink-service",
+        "--app-port", "3000",
+        "--app-channel-address", "sink-service",
+        "--placement-host-address", "placement:50006",
+        "--resources-path", "/components",
+        "--log-level", "warn",
+      ]
+    volumes:
+      - ./redis/components:/components
+    networks:
+      - broker-net
+      - cluster-sink
+    depends_on:
+      - sink-service
+
+  # big 0
+  big-0-service:
+    build: .
+    ports:
+      - "3501:3500"
+    environment:
+      - ROLE=big
+      - DAPR_HTTP_ENDPOINT=http://big-0-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://big-0-sidecar:50001
+      - BIG_ID=big-0
+    networks:
+      - influx-net
+      - cluster-c0
+    depends_on:
+      - redis
+      - placement
+  big-0-sidecar:
+    image: daprio/daprd:1.16.0
+    command:
+      [
+        "./daprd",
+        "--app-id", "big-0-service",
+        "--app-port", "3000",
+        "--app-channel-address", "big-0-service",
+        "--placement-host-address", "placement:50006",
+        "--resources-path", "/components",
+        "--log-level", "warn",
+      ]
+    volumes:
+      - ./redis/components:/components
+    networks:
+      - broker-net
+      - cluster-c0
+    depends_on:
+      - big-0-service
+
+  # big 1
+  big-1-service:
+    build: .
+    ports:
+      - "3502:3500"
+    environment:
+      - ROLE=big
+      - DAPR_HTTP_ENDPOINT=http://big-1-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://big-1-sidecar:50001
+      - BIG_ID=big-1
+    networks:
+      - influx-net
+      - cluster-c1
+    depends_on:
+      - redis
+      - placement
+  big-1-sidecar:
+    image: daprio/daprd:1.16.0
+    command:
+      [
+        "./daprd",
+        "--app-id", "big-1-service",
+        "--app-port", "3000",
+        "--app-channel-address", "big-1-service",
+        "--placement-host-address", "placement:50006",
+        "--resources-path", "/components",
+        "--log-level", "warn",
+      ]
+    volumes:
+      - ./redis/components:/components
+    networks:
+      - broker-net
+      - cluster-c1
+    depends_on:
+      - big-1-service
+
+  # big 2
+  big-2-service:
+    build: .
+    ports:
+      - "3503:3500"
+    environment:
+      - ROLE=big
+      - DAPR_HTTP_ENDPOINT=http://big-2-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://big-2-sidecar:50001
+      - BIG_ID=big-2
+    networks:
+      - influx-net
+      - cluster-c2
+    depends_on:
+      - redis
+      - placement
+  big-2-sidecar:
+    image: daprio/daprd:1.16.0
+    command:
+      [
+        "./daprd",
+        "--app-id", "big-2-service",
+        "--app-port", "3000",
+        "--app-channel-address", "big-2-service",
+        "--placement-host-address", "placement:50006",
+        "--resources-path", "/components",
+        "--log-level", "warn",
+      ]
+    volumes:
+      - ./redis/components:/components
+    networks:
+      - broker-net
+      - cluster-c2
+    depends_on:
+      - big-2-service
+
+  # big 3
+  big-3-service:
+    build: .
+    ports:
+      - "3504:3500"
+    environment:
+      - ROLE=big
+      - DAPR_HTTP_ENDPOINT=http://big-3-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://big-3-sidecar:50001
+      - BIG_ID=big-3
+    networks:
+      - influx-net
+      - cluster-c3
+    depends_on:
+      - redis
+      - placement
+  big-3-sidecar:
+    image: daprio/daprd:1.16.0
+    command:
+      [
+        "./daprd",
+        "--app-id", "big-3-service",
+        "--app-port", "3000",
+        "--app-channel-address", "big-3-service",
+        "--placement-host-address", "placement:50006",
+        "--resources-path", "/components",
+        "--log-level", "warn",
+      ]
+    volumes:
+      - ./redis/components:/components
+    networks:
+      - broker-net
+      - cluster-c3
+    depends_on:
+      - big-3-service
+
+  # big 4
+  big-4-service:
+    build: .
+    ports:
+      - "3505:3500"
+    environment:
+      - ROLE=big
+      - DAPR_HTTP_ENDPOINT=http://big-4-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://big-4-sidecar:50001
+      - BIG_ID=big-4
+    networks:
+      - influx-net
+      - cluster-c4
+    depends_on:
+      - redis
+      - placement
+  big-4-sidecar:
+    image: daprio/daprd:1.16.0
+    command:
+      [
+        "./daprd",
+        "--app-id", "big-4-service",
+        "--app-port", "3000",
+        "--app-channel-address", "big-4-service",
+        "--placement-host-address", "placement:50006",
+        "--resources-path", "/components",
+        "--log-level", "warn",
+      ]
+    volumes:
+      - ./redis/components:/components
+    networks:
+      - broker-net
+      - cluster-c4
+    depends_on:
+      - big-4-service
+
+  # big 5
+  big-5-service:
+    build: .
+    ports:
+      - "3506:3500"
+    environment:
+      - ROLE=big
+      - DAPR_HTTP_ENDPOINT=http://big-5-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://big-5-sidecar:50001
+      - BIG_ID=big-5
+    networks:
+      - influx-net
+      - cluster-c5
+    depends_on:
+      - redis
+      - placement
+  big-5-sidecar:
+    image: daprio/daprd:1.16.0
+    command:
+      [
+        "./daprd",
+        "--app-id", "big-5-service",
+        "--app-port", "3000",
+        "--app-channel-address", "big-5-service",
+        "--placement-host-address", "placement:50006",
+        "--resources-path", "/components",
+        "--log-level", "warn",
+      ]
+    volumes:
+      - ./redis/components:/components
+    networks:
+      - broker-net
+      - cluster-c5
+    depends_on:
+      - big-5-service
+
+  # big 6
+  big-6-service:
+    build: .
+    ports:
+      - "3507:3500"
+    environment:
+      - ROLE=big
+      - DAPR_HTTP_ENDPOINT=http://big-6-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://big-6-sidecar:50001
+      - BIG_ID=big-6
+    networks:
+      - cluster-c6
+      - influx-net
+    depends_on:
+      - redis
+      - placement
+  big-6-sidecar:
+    image: daprio/daprd:1.16.0
+    command:
+      [
+        "./daprd",
+        "--app-id", "big-6-service",
+        "--app-port", "3000",
+        "--app-channel-address", "big-6-service",
+        "--placement-host-address", "placement:50006",
+        "--resources-path", "/components",
+        "--log-level", "warn",
+      ]
+    volumes:
+      - ./redis/components:/components
+    networks:
+      - broker-net
+      - cluster-c6
+    depends_on:
+      - big-6-service
+
+  # big 7
+  big-7-service:
+    build: .
+    ports:
+      - "3508:3500"
+    environment:
+      - ROLE=big
+      - DAPR_HTTP_ENDPOINT=http://big-7-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://big-7-sidecar:50001
+      - BIG_ID=big-7
+    networks:
+      - cluster-c7
+      - influx-net
+    depends_on:
+      - redis
+      - placement
+  big-7-sidecar:
+    image: daprio/daprd:1.16.0
+    command:
+      [
+        "./daprd",
+        "--app-id", "big-7-service",
+        "--app-port", "3000",
+        "--app-channel-address", "big-7-service",
+        "--placement-host-address", "placement:50006",
+        "--resources-path", "/components",
+        "--log-level", "warn",
+      ]
+    volumes:
+      - ./redis/components:/components
+    networks:
+      - broker-net
+      - cluster-c7
+    depends_on:
+      - big-7-service
+
+  # big 8
+  big-8-service:
+    build: .
+    ports:
+      - "3509:3500"
+    environment:
+      - ROLE=big
+      - DAPR_HTTP_ENDPOINT=http://big-8-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://big-8-sidecar:50001
+      - BIG_ID=big-8
+    networks:
+      - influx-net
+      - cluster-c8
+    depends_on:
+      - redis
+      - placement
+  big-8-sidecar:
+    image: daprio/daprd:1.16.0
+    command:
+      [
+        "./daprd",
+        "--app-id", "big-8-service",
+        "--app-port", "3000",
+        "--app-channel-address", "big-8-service",
+        "--placement-host-address", "placement:50006",
+        "--resources-path", "/components",
+        "--log-level", "warn",
+      ]
+    volumes:
+      - ./redis/components:/components
+    networks:
+      - broker-net
+      - cluster-c8
+    depends_on:
+      - big-8-service
+
+  # big 9
+  big-9-service:
+    build: .
+    ports:
+      - "3510:3500"
+    environment:
+      - ROLE=big
+      - DAPR_HTTP_ENDPOINT=http://big-9-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://big-9-sidecar:50001
+      - BIG_ID=big-9
+    networks:
+      - influx-net
+      - cluster-c9
+    depends_on:
+      - redis
+      - placement
+  big-9-sidecar:
+    image: daprio/daprd:1.16.0
+    command:
+      [
+        "./daprd",
+        "--app-id", "big-9-service",
+        "--app-port", "3000",
+        "--app-channel-address", "big-9-service",
+        "--placement-host-address", "placement:50006",
+        "--resources-path", "/components",
+        "--log-level", "warn",
+      ]
+    volumes:
+      - ./redis/components:/components
+    networks:
+      - broker-net
+      - cluster-c9
+    depends_on:
+      - big-9-service
+
+  # big 10
+  big-10-service:
+    build: .
+    ports:
+      - "3511:3500"
+    environment:
+      - ROLE=big
+      - DAPR_HTTP_ENDPOINT=http://big-10-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://big-10-sidecar:50001
+      - BIG_ID=big-10
+    networks:
+      - influx-net
+      - cluster-c10
+    depends_on:
+      - redis
+      - placement
+  big-10-sidecar:
+    image: daprio/daprd:1.16.0
+    command:
+      [
+        "./daprd",
+        "--app-id", "big-10-service",
+        "--app-port", "3000",
+        "--app-channel-address", "big-10-service",
+        "--placement-host-address", "placement:50006",
+        "--resources-path", "/components",
+        "--log-level", "warn",
+      ]
+    volumes:
+      - ./redis/components:/components
+    networks:
+      - broker-net
+      - cluster-c10
+    depends_on:
+      - big-10-service
+
+  # big 11
+  big-11-service:
+    build: .
+    ports:
+      - "3512:3500"
+    environment:
+      - ROLE=big
+      - DAPR_HTTP_ENDPOINT=http://big-11-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://big-11-sidecar:50001
+      - BIG_ID=big-11
+    networks:
+      - influx-net
+      - cluster-c11
+    depends_on:
+      - redis
+      - placement
+  big-11-sidecar:
+    image: daprio/daprd:1.16.0
+    command:
+      [
+        "./daprd",
+        "--app-id", "big-11-service",
+        "--app-port", "3000",
+        "--app-channel-address", "big-11-service",
+        "--placement-host-address", "placement:50006",
+        "--resources-path", "/components",
+        "--log-level", "warn",
+      ]
+    volumes:
+      - ./redis/components:/components
+    networks:
+      - broker-net
+      - cluster-c11
+    depends_on:
+      - big-11-service
+
+networks:
+  broker-net:
+  influx-net:
+  cluster-sink:
+  cluster-c0:
+  cluster-c1:
+  cluster-c2:
+  cluster-c3:
+  cluster-c4:
+  cluster-c5:
+  cluster-c6:
+  cluster-c7:
+  cluster-c8:
+  cluster-c9:
+  cluster-c10:
+  cluster-c11:

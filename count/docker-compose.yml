@@ -1,0 +1,99 @@
+services:
+  influxdb:
+    image: influxdb:2.7
+    ports:
+      - "8086:8086"
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=adminpassword
+      - DOCKER_INFLUXDB_INIT_ORG=dapr
+      - DOCKER_INFLUXDB_INIT_BUCKET=bucket
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=auth
+    networks:
+      - influx-net
+
+  redis:
+    image: redis:8.2.4-alpine
+    networks:
+      - broker-net
+
+  placement:
+    image: daprio/placement:1.16.0
+    command: ["./placement", "--port", "50006"]
+    networks:
+      - broker-net
+
+  producer-service:
+    build: .
+    ports:
+      - "3500:3500"
+    environment:
+      - ROLE=producer
+      - DAPR_HTTP_ENDPOINT=http://producer-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://producer-sidecar:50001
+    networks:
+      - cluster-a
+      - influx-net
+    depends_on:
+      - redis
+      - placement
+
+  producer-sidecar:
+    image: daprio/daprd:1.16.0
+    command:
+      [
+        "./daprd",
+        "--app-id", "producer-service",
+        "--app-port", "3000",
+        "--app-channel-address", "producer-service",
+        "--placement-host-address", "placement:50006",
+        "--resources-path", "/components",
+        "--log-level", "warn",
+      ]
+    volumes:
+      - ./redis/components:/components
+    networks:
+      - broker-net
+      - cluster-a
+    depends_on:
+      - producer-service
+
+  counter-service:
+    build: .
+    environment:
+      - ROLE=counter
+      - DAPR_HTTP_ENDPOINT=http://counter-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://counter-sidecar:50001
+    networks:
+      - cluster-b
+      - influx-net
+    depends_on:
+      - redis
+      - placement
+
+  counter-sidecar:
+    image: daprio/daprd:1.16.0
+    command:
+      [
+        "./daprd",
+        "--app-id", "counter-service",
+        "--app-port", "3000",
+        "--app-channel-address", "counter-service",
+        "--placement-host-address", "placement:50006",
+        "--resources-path", "/components",
+        "--log-level", "info",
+      ]
+    volumes:
+      - ./redis/components:/components
+    networks:
+      - broker-net
+      - cluster-b
+    depends_on:
+      - counter-service
+
+networks:
+  cluster-a:
+  cluster-b:
+  broker-net:
+  influx-net:
