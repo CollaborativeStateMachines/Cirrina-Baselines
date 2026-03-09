@@ -14,14 +14,12 @@ import org.springframework.web.bind.annotation.RestController
 class SinkSubscriber {
 
   private val sinkProxy =
-      ActorProxyBuilder(SinkActor::class.java, ActorClient()).build(ActorId("sink-1"))
+    ActorProxyBuilder(SinkActor::class.java, ActorClient()).build(ActorId("sink-1"))
 
   @Topic(name = "register", pubsubName = "pubsub")
   @PostMapping("/register")
   fun handleRegister(@RequestBody body: Map<String, Any>) {
     val actor = body["data"] as String
-    println("got register from $actor")
-
     sinkProxy.register(actor)
   }
 
