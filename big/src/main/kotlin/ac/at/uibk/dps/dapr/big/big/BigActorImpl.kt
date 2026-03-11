@@ -4,7 +4,6 @@ import io.dapr.actors.ActorId
 import io.dapr.actors.runtime.AbstractActor
 import io.dapr.actors.runtime.ActorRuntimeContext
 import io.dapr.client.DaprClientBuilder
-import io.micrometer.core.instrument.Metrics
 
 class BigActorImpl(runtimeContext: ActorRuntimeContext<BigActorImpl>, val actorId: ActorId) :
   AbstractActor(runtimeContext, actorId), BigActor {
@@ -26,10 +25,8 @@ class BigActorImpl(runtimeContext: ActorRuntimeContext<BigActorImpl>, val actorI
 
   override fun receivePong(sender: String) {
     if (sender == target) {
-      if (count < 20000) {
-        sendPing()
-        count++
-      } else client.publishEvent("pubsub", "done", actorId.toString()).subscribe()
+      sendPing()
+      count++
     } else {
       println("$actorId received pong from $sender, expected $target")
       return
