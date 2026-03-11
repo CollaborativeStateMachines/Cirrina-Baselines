@@ -18,10 +18,6 @@ class ArbiterActorImpl(runtimeContext: ActorRuntimeContext<ArbiterActorImpl>, ac
     if (count == 0) {
       start = System.nanoTime()
     }
-    if (count == 20000) {
-      done()
-      return
-    }
     count++
     val provide = ingredients.toMutableList()
     provide.remove(provide.random())
