@@ -10,19 +10,13 @@ services:
       - DOCKER_INFLUXDB_INIT_ORG=dapr
       - DOCKER_INFLUXDB_INIT_BUCKET=bucket
       - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=auth
-    networks:
-      - influx-net
 
   redis:
     image: redis:8.2.4-alpine
     command: ["redis-server", "--save", ""]
-    networks:
-      - broker-net
   placement:
     image: daprio/placement:1.16.0
     command: ["./placement", "--port", "50006"]
-    networks:
-      - broker-net
   # Arbiter
   arbiter-service:
     build: .
@@ -32,9 +26,6 @@ services:
       - ROLE=arbiter
       - DAPR_HTTP_ENDPOINT=http://arbiter-sidecar:3500
       - DAPR_GRPC_ENDPOINT=http://arbiter-sidecar:50001
-    networks:
-      - cluster-arbiter
-      - influx-net
     depends_on:
       - redis
       - placement
@@ -52,9 +43,6 @@ services:
       ]
     volumes:
       - ./redis/components:/components
-    networks:
-      - broker-net
-      - cluster-arbiter
     depends_on:
       - arbiter-service
 
@@ -68,9 +56,6 @@ services:
       - DAPR_HTTP_ENDPOINT=http://smoker-0-sidecar:3500
       - DAPR_GRPC_ENDPOINT=http://smoker-0-sidecar:50001
       - SMOKER_ID=smoker-0
-    networks:
-      - cluster-c0
-      - influx-net
     depends_on:
       - redis
       - placement
@@ -88,9 +73,6 @@ services:
       ]
     volumes:
       - ./redis/components:/components
-    networks:
-      - broker-net
-      - cluster-c0
     depends_on:
       - smoker-0-service
 
@@ -104,9 +86,6 @@ services:
       - DAPR_HTTP_ENDPOINT=http://smoker-1-sidecar:3500
       - DAPR_GRPC_ENDPOINT=http://smoker-1-sidecar:50001
       - SMOKER_ID=smoker-1
-    networks:
-      - influx-net
-      - cluster-c1
     depends_on:
       - redis
       - placement
@@ -124,9 +103,6 @@ services:
       ]
     volumes:
       - ./redis/components:/components
-    networks:
-      - broker-net
-      - cluster-c1
     depends_on:
       - smoker-1-service
 
@@ -140,9 +116,6 @@ services:
       - DAPR_HTTP_ENDPOINT=http://smoker-2-sidecar:3500
       - DAPR_GRPC_ENDPOINT=http://smoker-2-sidecar:50001
       - SMOKER_ID=smoker-2
-    networks:
-      - influx-net
-      - cluster-c2
     depends_on:
       - redis
       - placement
@@ -160,16 +133,5 @@ services:
       ]
     volumes:
       - ./redis/components:/components
-    networks:
-      - broker-net
-      - cluster-c2
     depends_on:
       - smoker-2-service
-
-networks:
-  broker-net:
-  influx-net:
-  cluster-arbiter:
-  cluster-c0:
-  cluster-c1:
-  cluster-c2:

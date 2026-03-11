@@ -10,19 +10,13 @@ services:
       - DOCKER_INFLUXDB_INIT_ORG=dapr
       - DOCKER_INFLUXDB_INIT_BUCKET=bucket
       - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=auth
-    networks:
-      - influx-net
 
   redis:
     image: redis:8.2.4-alpine
-    networks:
-      - broker-net
 
   placement:
     image: daprio/placement:1.16.0
     command: ["./placement", "--port", "50006"]
-    networks:
-      - broker-net
 
   producer-service:
     build: .
@@ -32,9 +26,6 @@ services:
       - ROLE=producer
       - DAPR_HTTP_ENDPOINT=http://producer-sidecar:3500
       - DAPR_GRPC_ENDPOINT=http://producer-sidecar:50001
-    networks:
-      - cluster-a
-      - influx-net
     depends_on:
       - redis
       - placement
@@ -53,9 +44,6 @@ services:
       ]
     volumes:
       - ./redis/components:/components
-    networks:
-      - broker-net
-      - cluster-a
     depends_on:
       - producer-service
 
@@ -65,9 +53,6 @@ services:
       - ROLE=counter
       - DAPR_HTTP_ENDPOINT=http://counter-sidecar:3500
       - DAPR_GRPC_ENDPOINT=http://counter-sidecar:50001
-    networks:
-      - cluster-b
-      - influx-net
     depends_on:
       - redis
       - placement
@@ -86,14 +71,5 @@ services:
       ]
     volumes:
       - ./redis/components:/components
-    networks:
-      - broker-net
-      - cluster-b
     depends_on:
       - counter-service
-
-networks:
-  cluster-a:
-  cluster-b:
-  broker-net:
-  influx-net:
