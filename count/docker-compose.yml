@@ -16,7 +16,7 @@ services:
 
   placement:
     image: daprio/placement:1.16.0
-    command: ["./placement", "--port", "50006"]
+    command: [ "./placement", "--port", "50006" ]
 
   producer-service:
     build: .

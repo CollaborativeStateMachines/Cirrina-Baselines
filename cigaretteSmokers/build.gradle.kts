@@ -1,16 +1,14 @@
 plugins {
-    kotlin("jvm") version "2.3.0"
-    kotlin("plugin.spring") version "2.1.20"
-    id("org.springframework.boot") version "3.4.4"
-    id("io.spring.dependency-management") version "1.1.7"
-    application
+  kotlin("jvm") version "2.3.0"
+  kotlin("plugin.spring") version "2.1.20"
+  id("org.springframework.boot") version "3.4.4"
+  id("io.spring.dependency-management") version "1.1.7"
+  application
 }
 
 java { toolchain { languageVersion = JavaLanguageVersion.of(25) } }
 
-repositories {
-    mavenCentral()
-}
+repositories { mavenCentral() }
 
 dependencies {
   implementation("org.springframework.boot:spring-boot-starter-web")
@@ -23,6 +21,4 @@ dependencies {
   implementation("org.springframework.boot:spring-boot-starter-actuator")
 }
 
-application {
-    mainClass.set("ac.at.uibk.dps.dapr.cigarette.CigaretteSmokersKt")
-}
+application { mainClass.set("ac.at.uibk.dps.dapr.cigarette.CigaretteSmokersKt") }

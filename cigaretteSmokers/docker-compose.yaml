@@ -13,10 +13,10 @@ services:
 
   redis:
     image: redis:8.2.4-alpine
-    command: ["redis-server", "--save", ""]
+    command: [ "redis-server", "--save", "" ]
   placement:
     image: daprio/placement:1.16.0
-    command: ["./placement", "--port", "50006"]
+    command: [ "./placement", "--port", "50006" ]
   # Arbiter
   arbiter-service:
     build: .
