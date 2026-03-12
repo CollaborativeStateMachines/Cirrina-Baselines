@@ -1,0 +1,18 @@
+### Gradle ###
+**/.gradle
+**/gradle
+**/gradlew
+**/gradlew.bat
+**/build
+
+### Kotlin ###
+.kotlin
+
+### VS Code ###
+.vscode/
+
+### IntelliJ IDEA ###
+.idea
+
+### Metrics ###
+**/local_metrics/
