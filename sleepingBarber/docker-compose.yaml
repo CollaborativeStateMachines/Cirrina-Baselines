@@ -1,0 +1,396 @@
+services:
+  influxdb:
+    image: influxdb:2.7
+    ports:
+      - "8086:8086"
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=adminpassword
+      - DOCKER_INFLUXDB_INIT_ORG=dapr
+      - DOCKER_INFLUXDB_INIT_BUCKET=bucket
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=auth
+
+  redis:
+    image: redis:8.2.4-alpine
+
+  placement:
+    image: "daprio/placement:edge"
+    command: [ "./placement", "--port", "50006" ]
+
+  waiting-room:
+    build: .
+    environment:
+      - ROLE=waiting_room
+      - ROOM_SLOTS=4
+      - DAPR_HTTP_ENDPOINT=http://waiting-room-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://waiting-room-sidecar:50001
+    depends_on:
+      - waiting-room-sidecar
+      - barber
+
+  waiting-room-sidecar:
+    image: "daprio/daprd:edge"
+    command: [
+      "./daprd",
+      "--app-id", "waiting-room-sidecar",
+      "--app-channel-address", "waiting-room",
+      "--app-port", "3000",
+      "--resources-path", "/components",
+      "--placement-host-address", "placement:50006",
+    ]
+    volumes:
+      - "./redis/components:/components"
+    depends_on:
+      - placement
+      - redis
+
+  barber:
+    build: .
+    environment:
+      - ROLE=barber
+      - CUTTING_TIME_MS=10
+      - DAPR_HTTP_ENDPOINT=http://barber-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://barber-sidecar:50001
+    depends_on:
+      - barber-sidecar
+
+  barber-sidecar:
+    image: "daprio/daprd:edge"
+    command: [
+      "./daprd",
+      "--app-id", "barber-sidecar",
+      "--app-channel-address", "barber",
+      "--app-port", "3000",
+      "--resources-path", "/components",
+      "--placement-host-address", "placement:50006",
+    ]
+    volumes:
+      - "./redis/components:/components"
+    depends_on:
+      - placement
+      - redis
+
+  w0:
+    build: .
+    environment:
+      - ROLE=customer
+      - CUSTOMER_ID=0
+      - DAPR_HTTP_ENDPOINT=http://w0-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://w0-sidecar:50001
+    depends_on:
+      - w0-sidecar
+      - waiting-room
+
+  w0-sidecar:
+    image: "daprio/daprd:edge"
+    command: [
+      "./daprd",
+      "--app-id", "w0-sidecar",
+      "--app-channel-address", "w0",
+      "--app-port", "3000",
+      "--resources-path", "/components",
+      "--placement-host-address", "placement:50006",
+    ]
+    volumes:
+      - "./redis/components:/components"
+    depends_on:
+      - placement
+      - redis
+
+  w1:
+    build: .
+    environment:
+      - ROLE=customer
+      - CUSTOMER_ID=1
+      - DAPR_HTTP_ENDPOINT=http://w1-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://w1-sidecar:50001
+    depends_on:
+      - w1-sidecar
+      - waiting-room
+
+  w1-sidecar:
+    image: "daprio/daprd:edge"
+    command: [
+      "./daprd",
+      "--app-id", "w1-sidecar",
+      "--app-channel-address", "w1",
+      "--app-port", "3000",
+      "--resources-path", "/components",
+      "--placement-host-address", "placement:50006",
+    ]
+    volumes:
+      - "./redis/components:/components"
+    depends_on:
+      - placement
+      - redis
+
+  w2:
+    build: .
+    environment:
+      - ROLE=customer
+      - CUSTOMER_ID=2
+      - DAPR_HTTP_ENDPOINT=http://w2-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://w2-sidecar:50001
+    depends_on:
+      - w2-sidecar
+      - waiting-room
+
+  w2-sidecar:
+    image: "daprio/daprd:edge"
+    command: [
+      "./daprd",
+      "--app-id", "w2-sidecar",
+      "--app-channel-address", "w2",
+      "--app-port", "3000",
+      "--resources-path", "/components",
+      "--placement-host-address", "placement:50006",
+    ]
+    volumes:
+      - "./redis/components:/components"
+    depends_on:
+      - placement
+      - redis
+
+  w3:
+    build: .
+    environment:
+      - ROLE=customer
+      - CUSTOMER_ID=3
+      - DAPR_HTTP_ENDPOINT=http://w3-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://w3-sidecar:50001
+    depends_on:
+      - w3-sidecar
+      - waiting-room
+
+  w3-sidecar:
+    image: "daprio/daprd:edge"
+    command: [
+      "./daprd",
+      "--app-id", "w3-sidecar",
+      "--app-channel-address", "w3",
+      "--app-port", "3000",
+      "--resources-path", "/components",
+      "--placement-host-address", "placement:50006",
+    ]
+    volumes:
+      - "./redis/components:/components"
+    depends_on:
+      - placement
+      - redis
+
+  w4:
+    build: .
+    environment:
+      - ROLE=customer
+      - CUSTOMER_ID=4
+      - DAPR_HTTP_ENDPOINT=http://w4-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://w4-sidecar:50001
+    depends_on:
+      - w4-sidecar
+      - waiting-room
+
+  w4-sidecar:
+    image: "daprio/daprd:edge"
+    command: [
+      "./daprd",
+      "--app-id", "w4-sidecar",
+      "--app-channel-address", "w4",
+      "--app-port", "3000",
+      "--resources-path", "/components",
+      "--placement-host-address", "placement:50006",
+    ]
+    volumes:
+      - "./redis/components:/components"
+    depends_on:
+      - placement
+      - redis
+
+  w5:
+    build: .
+    environment:
+      - ROLE=customer
+      - CUSTOMER_ID=5
+      - DAPR_HTTP_ENDPOINT=http://w5-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://w5-sidecar:50001
+    depends_on:
+      - w5-sidecar
+      - waiting-room
+
+  w5-sidecar:
+    image: "daprio/daprd:edge"
+    command: [
+      "./daprd",
+      "--app-id", "w5-sidecar",
+      "--app-channel-address", "w5",
+      "--app-port", "3000",
+      "--resources-path", "/components",
+      "--placement-host-address", "placement:50006",
+    ]
+    volumes:
+      - "./redis/components:/components"
+    depends_on:
+      - placement
+      - redis
+
+  w6:
+    build: .
+    environment:
+      - ROLE=customer
+      - CUSTOMER_ID=6
+      - DAPR_HTTP_ENDPOINT=http://w6-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://w6-sidecar:50001
+    depends_on:
+      - w6-sidecar
+      - waiting-room
+
+  w6-sidecar:
+    image: "daprio/daprd:edge"
+    command: [
+      "./daprd",
+      "--app-id", "w6-sidecar",
+      "--app-channel-address", "w6",
+      "--app-port", "3000",
+      "--resources-path", "/components",
+      "--placement-host-address", "placement:50006",
+    ]
+    volumes:
+      - "./redis/components:/components"
+    depends_on:
+      - placement
+      - redis
+
+  w7:
+    build: .
+    environment:
+      - ROLE=customer
+      - CUSTOMER_ID=7
+      - DAPR_HTTP_ENDPOINT=http://w7-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://w7-sidecar:50001
+    depends_on:
+      - w7-sidecar
+      - waiting-room
+
+  w7-sidecar:
+    image: "daprio/daprd:edge"
+    command: [
+      "./daprd",
+      "--app-id", "w7-sidecar",
+      "--app-channel-address", "w7",
+      "--app-port", "3000",
+      "--resources-path", "/components",
+      "--placement-host-address", "placement:50006",
+    ]
+    volumes:
+      - "./redis/components:/components"
+    depends_on:
+      - placement
+      - redis
+
+  w8:
+    build: .
+    environment:
+      - ROLE=customer
+      - CUSTOMER_ID=8
+      - DAPR_HTTP_ENDPOINT=http://w8-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://w8-sidecar:50001
+    depends_on:
+      - w8-sidecar
+      - waiting-room
+
+  w8-sidecar:
+    image: "daprio/daprd:edge"
+    command: [
+      "./daprd",
+      "--app-id", "w8-sidecar",
+      "--app-channel-address", "w8",
+      "--app-port", "3000",
+      "--resources-path", "/components",
+      "--placement-host-address", "placement:50006",
+    ]
+    volumes:
+      - "./redis/components:/components"
+    depends_on:
+      - placement
+      - redis
+
+  w9:
+    build: .
+    environment:
+      - ROLE=customer
+      - CUSTOMER_ID=9
+      - DAPR_HTTP_ENDPOINT=http://w9-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://w9-sidecar:50001
+    depends_on:
+      - w9-sidecar
+      - waiting-room
+
+  w9-sidecar:
+    image: "daprio/daprd:edge"
+    command: [
+      "./daprd",
+      "--app-id", "w9-sidecar",
+      "--app-channel-address", "w9",
+      "--app-port", "3000",
+      "--resources-path", "/components",
+      "--placement-host-address", "placement:50006",
+    ]
+    volumes:
+      - "./redis/components:/components"
+    depends_on:
+      - placement
+      - redis
+
+  w10:
+    build: .
+    environment:
+      - ROLE=customer
+      - CUSTOMER_ID=10
+      - DAPR_HTTP_ENDPOINT=http://w10-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://w10-sidecar:50001
+    depends_on:
+      - w10-sidecar
+      - waiting-room
+
+  w10-sidecar:
+    image: "daprio/daprd:edge"
+    command: [
+      "./daprd",
+      "--app-id", "w10-sidecar",
+      "--app-channel-address", "w10",
+      "--app-port", "3000",
+      "--resources-path", "/components",
+      "--placement-host-address", "placement:50006",
+    ]
+    volumes:
+      - "./redis/components:/components"
+    depends_on:
+      - placement
+      - redis
+
+  w11:
+    build: .
+    environment:
+      - ROLE=customer
+      - CUSTOMER_ID=11
+      - DAPR_HTTP_ENDPOINT=http://w11-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://w11-sidecar:50001
+    depends_on:
+      - w11-sidecar
+      - waiting-room
+
+  w11-sidecar:
+    image: "daprio/daprd:edge"
+    command: [
+      "./daprd",
+      "--app-id", "w11-sidecar",
+      "--app-channel-address", "w11",
+      "--app-port", "3000",
+      "--resources-path", "/components",
+      "--placement-host-address", "placement:50006",
+    ]
+    volumes:
+      - "./redis/components:/components"
+    depends_on:
+      - placement
+      - redis
