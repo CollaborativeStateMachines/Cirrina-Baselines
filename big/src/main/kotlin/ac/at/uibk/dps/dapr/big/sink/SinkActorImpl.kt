@@ -6,7 +6,7 @@ import io.dapr.actors.runtime.ActorRuntimeContext
 import io.dapr.client.DaprClientBuilder
 
 class SinkActorImpl(runtimeContext: ActorRuntimeContext<SinkActorImpl>, val actorId: ActorId) :
-  AbstractActor(runtimeContext, actorId), SinkActor {
+    AbstractActor(runtimeContext, actorId), SinkActor {
 
   val client = DaprClientBuilder().build()
   var bigs = mutableListOf<String>()
@@ -15,12 +15,8 @@ class SinkActorImpl(runtimeContext: ActorRuntimeContext<SinkActorImpl>, val acto
   override fun register(actor: String) {
     if (!bigs.contains(actor)) {
       bigs.add(actor)
-      println("Register actor $actor")
-    } else {
-      println("Big $actor already registered!")
     }
     if (bigs.size == 12) {
-      println("Received all bigs")
       sendNeighbors()
     }
   }
@@ -34,11 +30,6 @@ class SinkActorImpl(runtimeContext: ActorRuntimeContext<SinkActorImpl>, val acto
   override fun receiveDone(sender: String) {
     if (!bigs.contains(sender)) {
       bigs.add(sender)
-    } else {
-      println("Big $sender already signaled done!")
-    }
-    if (bigs.size == 12) {
-      println("All bigs finished in ${(System.nanoTime() - startTime)/ 1_000_000} ms")
     }
   }
 }
