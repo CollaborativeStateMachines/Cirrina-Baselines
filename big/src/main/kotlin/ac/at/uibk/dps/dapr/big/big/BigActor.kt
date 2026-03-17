@@ -8,9 +8,7 @@ interface BigActor {
 
   fun assignNeighbors(neighbors: List<String>)
 
-  fun receivePong(sender: String)
+  fun receivePong(data: Map<String, Any>)
 
-  fun sendPing()
-
-  fun sendPong(sender: String)
+  fun sendPong(data: Map<String, Any>)
 }

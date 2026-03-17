@@ -8,5 +8,5 @@ interface SinkActor {
 
   fun sendNeighbors()
 
-  fun receiveDone(sender: String)
+  fun receiveDone(data: Map<String, Any>)
 }

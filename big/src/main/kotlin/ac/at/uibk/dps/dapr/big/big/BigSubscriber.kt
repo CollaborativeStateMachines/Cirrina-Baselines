@@ -12,39 +12,38 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @ConditionalOnProperty("app.role", havingValue = "big")
 class BigSubscriber {
-
   private val id = System.getenv("BIG_ID")
-  private val actorClient = ActorClient()
-  private val bigProxy = ActorProxyBuilder(BigActor::class.java, actorClient).build(ActorId("$id"))
+
+  private val bigProxy =
+      ActorProxyBuilder(BigActor::class.java, ActorClient()).build(ActorId("$id"))
 
   @Topic(name = "neighbors", pubsubName = "pubsub")
   @PostMapping("/neighbors")
   fun handleNeighbors(@RequestBody body: Map<String, Any>) {
     val neighbors = body["data"] as List<String>
+
     bigProxy.assignNeighbors(neighbors)
   }
 
   @Topic(name = "ping", pubsubName = "pubsub")
   @PostMapping("/ping")
   fun handlePing(@RequestBody body: Map<String, Any>) {
-    val data = body["data"] as? Map<*, *> ?: body
+    val data = body["data"] as? Map<String, Any> ?: body
     val receiver = data["receiver"] as? String ?: return
 
     if (receiver == id) {
-      val sender = data["sender"] as? String ?: return
-      bigProxy.sendPong(sender)
+      bigProxy.sendPong(data)
     }
   }
 
   @Topic(name = "pong", pubsubName = "pubsub")
   @PostMapping("/pong")
   fun handlePong(@RequestBody body: Map<String, Any>) {
-    val data = body["data"] as? Map<*, *> ?: body
+    val data = body["data"] as? Map<String, Any> ?: body
     val receiver = data["receiver"] as? String ?: return
 
     if (receiver == id) {
-      val sender = data["sender"] as? String ?: return
-      bigProxy.receivePong(sender)
+      bigProxy.receivePong(data)
     }
   }
 }

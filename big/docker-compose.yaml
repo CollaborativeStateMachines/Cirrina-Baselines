@@ -1,408 +1,432 @@
 services:
-  influxdb:
-    image: influxdb:2.7
-    ports:
-      - "8086:8086"
-    environment:
-      - DOCKER_INFLUXDB_INIT_MODE=setup
-      - DOCKER_INFLUXDB_INIT_USERNAME=admin
-      - DOCKER_INFLUXDB_INIT_PASSWORD=adminpassword
-      - DOCKER_INFLUXDB_INIT_ORG=dapr
-      - DOCKER_INFLUXDB_INIT_BUCKET=bucket
-      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=auth
-
   redis:
     image: redis:8.2.4-alpine
     command: [ "redis-server", "--save", "" ]
-  placement:
-    image: daprio/placement:1.16.0
-    command: [ "./placement", "--port", "50006" ]
 
   # Sink
-  sink-service:
+  placement-sink:
+    image: daprio/placement:1.16.0
+    command: [ "./placement", "--port", "50006" ]
+  sink:
     build: .
-    ports:
-      - "3500:3500"
     environment:
       - ROLE=sink
       - DAPR_HTTP_ENDPOINT=http://sink-sidecar:3500
       - DAPR_GRPC_ENDPOINT=http://sink-sidecar:50001
+    volumes:
+      - ./metrics_sink:/metrics
     depends_on:
       - redis
-      - placement
+      - placement-sink
   sink-sidecar:
     image: daprio/daprd:1.16.0
     command:
       [
         "./daprd",
-        "--app-id", "sink-service",
+        "--app-id", "sink",
         "--app-port", "3000",
-        "--app-channel-address", "sink-service",
-        "--placement-host-address", "placement:50006",
+        "--app-channel-address", "sink",
+        "--placement-host-address", "placement-sink:50006",
         "--resources-path", "/components",
         "--log-level", "warn",
       ]
     volumes:
       - ./redis/components:/components
     depends_on:
-      - sink-service
+      - sink
 
   # big 0
-  big-0-service:
+  placement-w0:
+    image: daprio/placement:1.16.0
+    command: [ "./placement", "--port", "50006" ]
+  w0:
     build: .
-    ports:
-      - "3501:3500"
     environment:
       - ROLE=big
-      - DAPR_HTTP_ENDPOINT=http://big-0-sidecar:3500
-      - DAPR_GRPC_ENDPOINT=http://big-0-sidecar:50001
-      - BIG_ID=big-0
+      - DAPR_HTTP_ENDPOINT=http://w0-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://w0-sidecar:50001
+      - BIG_ID=w0
+    volumes:
+      - ./metrics_w0:/metrics
     depends_on:
       - redis
-      - placement
-  big-0-sidecar:
+      - placement-w0
+  w0-sidecar:
     image: daprio/daprd:1.16.0
     command:
       [
         "./daprd",
-        "--app-id", "big-0-service",
+        "--app-id", "w0",
         "--app-port", "3000",
-        "--app-channel-address", "big-0-service",
-        "--placement-host-address", "placement:50006",
+        "--app-channel-address", "w0",
+        "--placement-host-address", "placement-w0:50006",
         "--resources-path", "/components",
         "--log-level", "warn",
       ]
     volumes:
       - ./redis/components:/components
     depends_on:
-      - big-0-service
+      - w0
 
   # big 1
-  big-1-service:
+  placement-w1:
+    image: daprio/placement:1.16.0
+    command: [ "./placement", "--port", "50006" ]
+  w1:
     build: .
-    ports:
-      - "3502:3500"
     environment:
       - ROLE=big
-      - DAPR_HTTP_ENDPOINT=http://big-1-sidecar:3500
-      - DAPR_GRPC_ENDPOINT=http://big-1-sidecar:50001
-      - BIG_ID=big-1
+      - DAPR_HTTP_ENDPOINT=http://w1-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://w1-sidecar:50001
+      - BIG_ID=w1
+    volumes:
+      - ./metrics_w1:/metrics
     depends_on:
       - redis
-      - placement
-  big-1-sidecar:
+      - placement-w1
+  w1-sidecar:
     image: daprio/daprd:1.16.0
     command:
       [
         "./daprd",
-        "--app-id", "big-1-service",
+        "--app-id", "w1",
         "--app-port", "3000",
-        "--app-channel-address", "big-1-service",
-        "--placement-host-address", "placement:50006",
+        "--app-channel-address", "w1",
+        "--placement-host-address", "placement-w1:50006",
         "--resources-path", "/components",
         "--log-level", "warn",
       ]
     volumes:
       - ./redis/components:/components
     depends_on:
-      - big-1-service
+      - w1
 
   # big 2
-  big-2-service:
+  placement-w2:
+    image: daprio/placement:1.16.0
+    command: [ "./placement", "--port", "50006" ]
+  w2:
     build: .
-    ports:
-      - "3503:3500"
     environment:
       - ROLE=big
-      - DAPR_HTTP_ENDPOINT=http://big-2-sidecar:3500
-      - DAPR_GRPC_ENDPOINT=http://big-2-sidecar:50001
-      - BIG_ID=big-2
+      - DAPR_HTTP_ENDPOINT=http://w2-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://w2-sidecar:50001
+      - BIG_ID=w2
+    volumes:
+      - ./metrics_w2:/metrics
     depends_on:
       - redis
-      - placement
-  big-2-sidecar:
+      - placement-w2
+  w2-sidecar:
     image: daprio/daprd:1.16.0
     command:
       [
         "./daprd",
-        "--app-id", "big-2-service",
+        "--app-id", "w2",
         "--app-port", "3000",
-        "--app-channel-address", "big-2-service",
-        "--placement-host-address", "placement:50006",
+        "--app-channel-address", "w2",
+        "--placement-host-address", "placement-w2:50006",
         "--resources-path", "/components",
         "--log-level", "warn",
       ]
     volumes:
       - ./redis/components:/components
     depends_on:
-      - big-2-service
+      - w2
 
   # big 3
-  big-3-service:
+  placement-w3:
+    image: daprio/placement:1.16.0
+    command: [ "./placement", "--port", "50006" ]
+  w3:
     build: .
-    ports:
-      - "3504:3500"
     environment:
       - ROLE=big
-      - DAPR_HTTP_ENDPOINT=http://big-3-sidecar:3500
-      - DAPR_GRPC_ENDPOINT=http://big-3-sidecar:50001
-      - BIG_ID=big-3
+      - DAPR_HTTP_ENDPOINT=http://w3-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://w3-sidecar:50001
+      - BIG_ID=w3
+    volumes:
+      - ./metrics_w3:/metrics
     depends_on:
       - redis
-      - placement
-  big-3-sidecar:
+      - placement-w3
+  w3-sidecar:
     image: daprio/daprd:1.16.0
     command:
       [
         "./daprd",
-        "--app-id", "big-3-service",
+        "--app-id", "w3",
         "--app-port", "3000",
-        "--app-channel-address", "big-3-service",
-        "--placement-host-address", "placement:50006",
+        "--app-channel-address", "w3",
+        "--placement-host-address", "placement-w3:50006",
         "--resources-path", "/components",
         "--log-level", "warn",
       ]
     volumes:
       - ./redis/components:/components
     depends_on:
-      - big-3-service
+      - w3
 
   # big 4
-  big-4-service:
+  placement-w4:
+    image: daprio/placement:1.16.0
+    command: [ "./placement", "--port", "50006" ]
+  w4:
     build: .
-    ports:
-      - "3505:3500"
     environment:
       - ROLE=big
-      - DAPR_HTTP_ENDPOINT=http://big-4-sidecar:3500
-      - DAPR_GRPC_ENDPOINT=http://big-4-sidecar:50001
-      - BIG_ID=big-4
+      - DAPR_HTTP_ENDPOINT=http://w4-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://w4-sidecar:50001
+      - BIG_ID=w4
+    volumes:
+      - ./metrics_w4:/metrics
     depends_on:
       - redis
-      - placement
-  big-4-sidecar:
+      - placement-w4
+  w4-sidecar:
     image: daprio/daprd:1.16.0
     command:
       [
         "./daprd",
-        "--app-id", "big-4-service",
+        "--app-id", "w4",
         "--app-port", "3000",
-        "--app-channel-address", "big-4-service",
-        "--placement-host-address", "placement:50006",
+        "--app-channel-address", "w4",
+        "--placement-host-address", "placement-w4:50006",
         "--resources-path", "/components",
         "--log-level", "warn",
       ]
     volumes:
       - ./redis/components:/components
     depends_on:
-      - big-4-service
+      - w4
 
   # big 5
-  big-5-service:
+  placement-w5:
+    image: daprio/placement:1.16.0
+    command: [ "./placement", "--port", "50006" ]
+  w5:
     build: .
-    ports:
-      - "3506:3500"
     environment:
       - ROLE=big
-      - DAPR_HTTP_ENDPOINT=http://big-5-sidecar:3500
-      - DAPR_GRPC_ENDPOINT=http://big-5-sidecar:50001
-      - BIG_ID=big-5
+      - DAPR_HTTP_ENDPOINT=http://w5-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://w5-sidecar:50001
+      - BIG_ID=w5
+    volumes:
+      - ./metrics_w5:/metrics
     depends_on:
       - redis
-      - placement
-  big-5-sidecar:
+      - placement-w5
+  w5-sidecar:
     image: daprio/daprd:1.16.0
     command:
       [
         "./daprd",
-        "--app-id", "big-5-service",
+        "--app-id", "w5",
         "--app-port", "3000",
-        "--app-channel-address", "big-5-service",
-        "--placement-host-address", "placement:50006",
+        "--app-channel-address", "w5",
+        "--placement-host-address", "placement-w5:50006",
         "--resources-path", "/components",
         "--log-level", "warn",
       ]
     volumes:
       - ./redis/components:/components
     depends_on:
-      - big-5-service
+      - w5
 
   # big 6
-  big-6-service:
+  placement-w6:
+    image: daprio/placement:1.16.0
+    command: [ "./placement", "--port", "50006" ]
+  w6:
     build: .
-    ports:
-      - "3507:3500"
     environment:
       - ROLE=big
-      - DAPR_HTTP_ENDPOINT=http://big-6-sidecar:3500
-      - DAPR_GRPC_ENDPOINT=http://big-6-sidecar:50001
-      - BIG_ID=big-6
+      - DAPR_HTTP_ENDPOINT=http://w6-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://w6-sidecar:50001
+      - BIG_ID=w6
+    volumes:
+      - ./metrics_w6:/metrics
     depends_on:
       - redis
-      - placement
-  big-6-sidecar:
+      - placement-w6
+  w6-sidecar:
     image: daprio/daprd:1.16.0
     command:
       [
         "./daprd",
-        "--app-id", "big-6-service",
+        "--app-id", "w6",
         "--app-port", "3000",
-        "--app-channel-address", "big-6-service",
-        "--placement-host-address", "placement:50006",
+        "--app-channel-address", "w6",
+        "--placement-host-address", "placement-w6:50006",
         "--resources-path", "/components",
         "--log-level", "warn",
       ]
     volumes:
       - ./redis/components:/components
     depends_on:
-      - big-6-service
+      - w6
 
   # big 7
-  big-7-service:
+  placement-w7:
+    image: daprio/placement:1.16.0
+    command: [ "./placement", "--port", "50006" ]
+  w7:
     build: .
-    ports:
-      - "3508:3500"
     environment:
       - ROLE=big
-      - DAPR_HTTP_ENDPOINT=http://big-7-sidecar:3500
-      - DAPR_GRPC_ENDPOINT=http://big-7-sidecar:50001
-      - BIG_ID=big-7
+      - DAPR_HTTP_ENDPOINT=http://w7-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://w7-sidecar:50001
+      - BIG_ID=w7
+    volumes:
+      - ./metrics_w7:/metrics
     depends_on:
       - redis
-      - placement
-  big-7-sidecar:
+      - placement-w7
+  w7-sidecar:
     image: daprio/daprd:1.16.0
     command:
       [
         "./daprd",
-        "--app-id", "big-7-service",
+        "--app-id", "w7",
         "--app-port", "3000",
-        "--app-channel-address", "big-7-service",
-        "--placement-host-address", "placement:50006",
+        "--app-channel-address", "w7",
+        "--placement-host-address", "placement-w7:50006",
         "--resources-path", "/components",
         "--log-level", "warn",
       ]
     volumes:
       - ./redis/components:/components
     depends_on:
-      - big-7-service
+      - w7
 
   # big 8
-  big-8-service:
+  placement-w8:
+    image: daprio/placement:1.16.0
+    command: [ "./placement", "--port", "50006" ]
+  w8:
     build: .
-    ports:
-      - "3509:3500"
     environment:
       - ROLE=big
-      - DAPR_HTTP_ENDPOINT=http://big-8-sidecar:3500
-      - DAPR_GRPC_ENDPOINT=http://big-8-sidecar:50001
-      - BIG_ID=big-8
+      - DAPR_HTTP_ENDPOINT=http://w8-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://w8-sidecar:50001
+      - BIG_ID=w8
+    volumes:
+      - ./metrics_w8:/metrics
     depends_on:
       - redis
-      - placement
-  big-8-sidecar:
+      - placement-w8
+  w8-sidecar:
     image: daprio/daprd:1.16.0
     command:
       [
         "./daprd",
-        "--app-id", "big-8-service",
+        "--app-id", "w8",
         "--app-port", "3000",
-        "--app-channel-address", "big-8-service",
-        "--placement-host-address", "placement:50006",
+        "--app-channel-address", "w8",
+        "--placement-host-address", "placement-w8:50006",
         "--resources-path", "/components",
         "--log-level", "warn",
       ]
     volumes:
       - ./redis/components:/components
     depends_on:
-      - big-8-service
+      - w8
 
   # big 9
-  big-9-service:
+  placement-w9:
+    image: daprio/placement:1.16.0
+    command: [ "./placement", "--port", "50006" ]
+  w9:
     build: .
-    ports:
-      - "3510:3500"
     environment:
       - ROLE=big
-      - DAPR_HTTP_ENDPOINT=http://big-9-sidecar:3500
-      - DAPR_GRPC_ENDPOINT=http://big-9-sidecar:50001
-      - BIG_ID=big-9
+      - DAPR_HTTP_ENDPOINT=http://w9-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://w9-sidecar:50001
+      - BIG_ID=w9
+    volumes:
+      - ./metrics_w9:/metrics
     depends_on:
       - redis
-      - placement
-  big-9-sidecar:
+      - placement-w9
+  w9-sidecar:
     image: daprio/daprd:1.16.0
     command:
       [
         "./daprd",
-        "--app-id", "big-9-service",
+        "--app-id", "w9",
         "--app-port", "3000",
-        "--app-channel-address", "big-9-service",
-        "--placement-host-address", "placement:50006",
+        "--app-channel-address", "w9",
+        "--placement-host-address", "placement-w9:50006",
         "--resources-path", "/components",
         "--log-level", "warn",
       ]
     volumes:
       - ./redis/components:/components
     depends_on:
-      - big-9-service
+      - w9
 
   # big 10
-  big-10-service:
+  placement-w10:
+    image: daprio/placement:1.16.0
+    command: [ "./placement", "--port", "50006" ]
+  w10:
     build: .
-    ports:
-      - "3511:3500"
     environment:
       - ROLE=big
-      - DAPR_HTTP_ENDPOINT=http://big-10-sidecar:3500
-      - DAPR_GRPC_ENDPOINT=http://big-10-sidecar:50001
-      - BIG_ID=big-10
+      - DAPR_HTTP_ENDPOINT=http://w10-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://w10-sidecar:50001
+      - BIG_ID=w10
+    volumes:
+      - ./metrics_w10:/metrics
     depends_on:
       - redis
-      - placement
-  big-10-sidecar:
+      - placement-w10
+  w10-sidecar:
     image: daprio/daprd:1.16.0
     command:
       [
         "./daprd",
-        "--app-id", "big-10-service",
+        "--app-id", "w10",
         "--app-port", "3000",
-        "--app-channel-address", "big-10-service",
-        "--placement-host-address", "placement:50006",
+        "--app-channel-address", "w10",
+        "--placement-host-address", "placement-w10:50006",
         "--resources-path", "/components",
         "--log-level", "warn",
       ]
     volumes:
       - ./redis/components:/components
     depends_on:
-      - big-10-service
+      - w10
 
   # big 11
-  big-11-service:
+  placement-w11:
+    image: daprio/placement:1.16.0
+    command: [ "./placement", "--port", "50006" ]
+  w11:
     build: .
-    ports:
-      - "3512:3500"
     environment:
       - ROLE=big
-      - DAPR_HTTP_ENDPOINT=http://big-11-sidecar:3500
-      - DAPR_GRPC_ENDPOINT=http://big-11-sidecar:50001
-      - BIG_ID=big-11
+      - DAPR_HTTP_ENDPOINT=http://w11-sidecar:3500
+      - DAPR_GRPC_ENDPOINT=http://w11-sidecar:50001
+      - BIG_ID=w11
+    volumes:
+      - ./metrics_w11:/metrics
     depends_on:
       - redis
-      - placement
-  big-11-sidecar:
+      - placement-w11
+  w11-sidecar:
     image: daprio/daprd:1.16.0
     command:
       [
         "./daprd",
-        "--app-id", "big-11-service",
+        "--app-id", "w11",
         "--app-port", "3000",
-        "--app-channel-address", "big-11-service",
-        "--placement-host-address", "placement:50006",
+        "--app-channel-address", "w11",
+        "--placement-host-address", "placement-w11:50006",
         "--resources-path", "/components",
         "--log-level", "warn",
       ]
     volumes:
       - ./redis/components:/components
     depends_on:
-      - big-11-service
+      - w11
