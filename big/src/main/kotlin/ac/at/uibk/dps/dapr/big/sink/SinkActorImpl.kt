@@ -5,7 +5,7 @@ import io.dapr.actors.runtime.AbstractActor
 import io.dapr.actors.runtime.ActorRuntimeContext
 import io.dapr.client.DaprClientBuilder
 
-class SinkActorImpl(runtimeContext: ActorRuntimeContext<SinkActorImpl>, val actorId: ActorId) :
+class SinkActorImpl(runtimeContext: ActorRuntimeContext<SinkActorImpl>, actorId: ActorId) :
     AbstractActor(runtimeContext, actorId), SinkActor {
 
   val client = DaprClientBuilder().build()
@@ -27,9 +27,9 @@ class SinkActorImpl(runtimeContext: ActorRuntimeContext<SinkActorImpl>, val acto
     bigs.clear()
   }
 
-  override fun receiveDone(sender: String) {
-    if (!bigs.contains(sender)) {
-      bigs.add(sender)
+  override fun receiveDone(data: Map<String, Any>) {
+    if (!bigs.contains(data["sender"] as String)) {
+      bigs.add(data["sender"] as String)
     }
   }
 }
