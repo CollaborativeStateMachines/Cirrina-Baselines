@@ -33,7 +33,5 @@ class AutoStarter : ApplicationRunner {
 
     val proxy = ActorProxyBuilder(BigActor::class.java, ActorClient()).build(ActorId(myId))
     proxy.register()
-
-    println("[$myId] Auto-started, sent initial request to sink")
   }
 }

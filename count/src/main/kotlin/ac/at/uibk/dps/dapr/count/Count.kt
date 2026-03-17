@@ -30,9 +30,7 @@ class AutoStarter : ApplicationRunner {
     if (role != "producer") return
 
     val proxy =
-      ActorProxyBuilder(ProducerActor::class.java, ActorClient()).build(ActorId("producer-1"))
+        ActorProxyBuilder(ProducerActor::class.java, ActorClient()).build(ActorId("producer-1"))
     proxy.produce()
-
-    println("Producer started, sending flood")
   }
 }

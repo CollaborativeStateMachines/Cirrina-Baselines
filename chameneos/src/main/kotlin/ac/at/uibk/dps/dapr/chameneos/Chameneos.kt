@@ -33,7 +33,5 @@ class AutoStarter : ApplicationRunner {
 
     val proxy = ActorProxyBuilder(ChameneosActor::class.java, ActorClient()).build(ActorId(myId))
     proxy.request()
-
-    println("[$myId] Auto-started, sent initial request to mall")
   }
 }

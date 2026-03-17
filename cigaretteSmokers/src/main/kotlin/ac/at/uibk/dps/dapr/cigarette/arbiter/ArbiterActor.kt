@@ -5,6 +5,4 @@ import io.dapr.actors.ActorType
 @ActorType(name = "ArbiterActor")
 interface ArbiterActor {
   fun provide()
-
-  fun done()
 }

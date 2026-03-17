@@ -7,7 +7,7 @@ import io.dapr.client.DaprClient
 import io.dapr.client.DaprClientBuilder
 
 class ArbiterActorImpl(runtimeContext: ActorRuntimeContext<ArbiterActorImpl>, actorId: ActorId) :
-  AbstractActor(runtimeContext, actorId), ArbiterActor {
+    AbstractActor(runtimeContext, actorId), ArbiterActor {
 
   val client: DaprClient = DaprClientBuilder().build()
   val ingredients = listOf("smoker-0", "smoker-1", "smoker-2")
@@ -22,9 +22,5 @@ class ArbiterActorImpl(runtimeContext: ActorRuntimeContext<ArbiterActorImpl>, ac
     val provide = ingredients.toMutableList()
     provide.remove(provide.random())
     client.publishEvent("pubsub", "provide", provide).subscribe()
-  }
-
-  override fun done() {
-    println("Finished $count rounds of smoking in ${(System.nanoTime() - start)/ 1_000_000} ms")
   }
 }
