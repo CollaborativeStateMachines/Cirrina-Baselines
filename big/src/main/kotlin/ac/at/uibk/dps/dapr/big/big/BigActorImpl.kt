@@ -29,7 +29,7 @@ class BigActorImpl(runtimeContext: ActorRuntimeContext<BigActorImpl>, val actorI
 
   var counter =
       metricRegistry.counter(
-          MetricName.build("big.count").tagged(mapOf("id" to actorId.toString()))
+          MetricName.build("big.pings").tagged(mapOf("id" to actorId.toString()))
       )
   var eventTimer =
       metricRegistry.timer(
