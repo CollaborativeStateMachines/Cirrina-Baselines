@@ -32,7 +32,9 @@ class PhilosopherActorImpl(runtimeContext: ActorRuntimeContext<PhilosopherActorI
 
   override fun eat(data: Map<String, Any>): Mono<Void> {
     val time = data["time"] as Long
-    metricsRegistry.timer(EVENT_TIMER_NAME)!!.update((System.nanoTime() - time) / 1_000, TimeUnit.MICROSECONDS)
+    metricsRegistry
+      .timer(EVENT_TIMER_NAME)!!
+      .update((System.currentTimeMillis() - time), TimeUnit.MILLISECONDS)
     val delta = measureTime {
       completedRounds++
       metricsRegistry.counter(COUNTER_NAME).inc(1L)
@@ -46,5 +48,6 @@ class PhilosopherActorImpl(runtimeContext: ActorRuntimeContext<PhilosopherActorI
     return Mono.empty()
   }
 
-  private fun getMap(): Map<String, Any> = mapOf("id" to id.toString(), "time" to System.nanoTime())
+  private fun getMap(): Map<String, Any> =
+    mapOf("id" to id.toString(), "time" to System.currentTimeMillis())
 }

@@ -16,3 +16,9 @@
 
 ### Metrics ###
 **/local_metrics/
+**/output
+
+### Vagrant ###
+**/.vagrant
+**/dapr-philosophers.tar.gz
+

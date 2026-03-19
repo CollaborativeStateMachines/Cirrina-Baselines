@@ -66,8 +66,10 @@ class ArbitratorActorImpl(
 
   private fun prev(i: Int) = (i - 1 + numberOfPhilosophers) % numberOfPhilosophers
 
-  private fun getMap(i: Int) = mapOf("id" to i, "time" to System.nanoTime())
+  private fun getMap(i: Int) = mapOf("id" to i, "time" to System.currentTimeMillis())
 
   private fun measureEventTime(data: Map<String, Any>) =
-    metricsRegistry.timer(EVENT_TIMER_NAME).update((System.nanoTime() - data["time"] as Long) / 1_000, TimeUnit.MICROSECONDS)
+    metricsRegistry
+      .timer(EVENT_TIMER_NAME)
+      .update((System.currentTimeMillis() - data["time"] as Long), TimeUnit.MILLISECONDS)
 }
