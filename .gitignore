@@ -4,7 +4,7 @@
 **/gradlew
 **/gradlew.bat
 **/build
-
+**/scripts
 ### Kotlin ###
 .kotlin
 

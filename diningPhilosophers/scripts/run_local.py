@@ -1,42 +1,12 @@
 import subprocess
 from datetime import datetime
-from influxdb_client import InfluxDBClient
 from pathlib import Path
 import time
 import argparse
-import csv
+import shutil
 
-URL = "http://localhost:8086"
-TOKEN = "auth"
-ORG = "dapr"
-BUCKET = "bucket"
-
-def get_data(result_folder: str, duration: int):
-    client = InfluxDBClient(url=URL, token=TOKEN, org=ORG)
-
-    query_api = client.query_api()
-
-    metrics_query = f"""
-    from(bucket: "bucket")
-      |> range(start: -{duration}s)
-      |> filter(fn: (r) => r["_measurement"] == "total_meals")
-      |> cumulativeSum(columns: ["_value"])
-      |> aggregateWindow(every: 1s, fn: last, createEmpty: true)
-      |> fill(usePrevious: true)
-      |> group(columns: ["_time"])
-      |> sum()
-      |> group()
-    """
-
-    metrics = query_api.query_csv(query=metrics_query, org=ORG)
-
-    with open(result_folder + "/metrics.csv", "w") as file:
-        writer = csv.writer(file)
-        for line in metrics:
-            if line:
-                writer.writerow(line)
-
-    client.close()
+OUTPUT_PATH = "../output"
+NUM_PHILOSOPHERS=6
 
 def main():
     parser = argparse.ArgumentParser()
@@ -59,21 +29,21 @@ def main():
 
     result_folder = f"./local_metrics/duration_{duration}_sec/{now}"
 
-    Path(result_folder).mkdir(parents=True, exist_ok=True)
+    shutil.copytree(OUTPUT_PATH, result_folder)
 
-    print("Gathering data...")
+    print(f"Metrics copied to -> {result_folder}")
 
-    get_data(result_folder, duration)
-
-    print(f"Saving results at: {result_folder}")
-
-    print("Shutting down...")
+    print("Cleaning up...")
     try:
         subprocess.run(["docker", "compose", "down", "-v"])
         print("Containers shut down successfully!")
     except subprocess.CalledProcessError as e:
         print("Failed to stop Containers, Return Code:", e.returncode)
         exit(1)
+
+    for i in range(NUM_PHILOSOPHERS):
+        file = Path(OUTPUT_PATH) / f"w{i}" / "metrics" / "total_meals.csv"
+        file.unlink(missing_ok=True)
 
 if __name__ == "__main__":
     main()

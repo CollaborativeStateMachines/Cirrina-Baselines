@@ -1,16 +1,4 @@
 services:
-  influxdb:
-    image: influxdb:2.7
-    ports:
-      - "8086:8086"
-    environment:
-      - DOCKER_INFLUXDB_INIT_MODE=setup
-      - DOCKER_INFLUXDB_INIT_USERNAME=admin
-      - DOCKER_INFLUXDB_INIT_PASSWORD=adminpassword
-      - DOCKER_INFLUXDB_INIT_ORG=dapr
-      - DOCKER_INFLUXDB_INIT_BUCKET=bucket
-      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=auth
-
   redis:
     image: redis:8.2.4-alpine
 
@@ -25,8 +13,11 @@ services:
       - NUMBER_OF_PHILOSOPHERS=6
       - DAPR_HTTP_ENDPOINT=http://arbitrator-sidecar:3500
       - DAPR_GRPC_ENDPOINT=http://arbitrator-sidecar:50001
+      - METRICS_DIRECTORY=/metrics
     depends_on:
       - arbitrator-sidecar
+    volumes:
+      - "./output/arbitrator/metrics:/metrics"
 
   arbitrator-sidecar:
     image: "daprio/daprd:edge"
@@ -49,8 +40,11 @@ services:
       - PHILOSOPHER_ID=0
       - DAPR_HTTP_ENDPOINT=http://w0-sidecar:3500
       - DAPR_GRPC_ENDPOINT=http://w0-sidecar:50001
+      - METRICS_DIRECTORY=/metrics
     depends_on:
       - w0-sidecar
+    volumes:
+      - "./output/w0/metrics:/metrics"
 
   w0-sidecar:
     image: "daprio/daprd:edge"
@@ -60,12 +54,16 @@ services:
       "--app-channel-address", "w0",
       "--app-port", "3000",
       "--resources-path", "/components",
-      "--placement-host-address", "placement:50006",
+      "--placement-host-address", "placement0:50006",
     ]
     volumes:
       - "./redis/components:/components"
     depends_on:
       - redis
+
+  placement0:
+    image: "daprio/placement:edge"
+    command: [ "./placement", "--port", "50006" ]
 
   w1:
     build: .
@@ -73,8 +71,11 @@ services:
       - PHILOSOPHER_ID=1
       - DAPR_HTTP_ENDPOINT=http://w1-sidecar:3500
       - DAPR_GRPC_ENDPOINT=http://w1-sidecar:50001
+      - METRICS_DIRECTORY=/metrics
     depends_on:
       - w1-sidecar
+    volumes:
+      - "./output/w1/metrics:/metrics"
 
   w1-sidecar:
     image: "daprio/daprd:edge"
@@ -84,12 +85,16 @@ services:
       "--app-channel-address", "w1",
       "--app-port", "3000",
       "--resources-path", "/components",
-      "--placement-host-address", "placement:50006",
+      "--placement-host-address", "placement1:50006",
     ]
     volumes:
       - "./redis/components:/components"
     depends_on:
       - redis
+
+  placement1:
+    image: "daprio/placement:edge"
+    command: [ "./placement", "--port", "50006" ]
 
   w2:
     build: .
@@ -97,8 +102,11 @@ services:
       - PHILOSOPHER_ID=2
       - DAPR_HTTP_ENDPOINT=http://w2-sidecar:3500
       - DAPR_GRPC_ENDPOINT=http://w2-sidecar:50001
+      - METRICS_DIRECTORY=/metrics
     depends_on:
       - w2-sidecar
+    volumes:
+      - "./output/w2/metrics:/metrics"
 
   w2-sidecar:
     image: "daprio/daprd:edge"
@@ -108,12 +116,16 @@ services:
       "--app-channel-address", "w2",
       "--app-port", "3000",
       "--resources-path", "/components",
-      "--placement-host-address", "placement:50006",
+      "--placement-host-address", "placement2:50006",
     ]
     volumes:
       - "./redis/components:/components"
     depends_on:
       - redis
+
+  placement2:
+    image: "daprio/placement:edge"
+    command: [ "./placement", "--port", "50006" ]
 
   w3:
     build: .
@@ -121,8 +133,11 @@ services:
       - PHILOSOPHER_ID=3
       - DAPR_HTTP_ENDPOINT=http://w3-sidecar:3500
       - DAPR_GRPC_ENDPOINT=http://w3-sidecar:50001
+      - METRICS_DIRECTORY=/metrics
     depends_on:
       - w3-sidecar
+    volumes:
+      - "./output/w3/metrics:/metrics"
 
   w3-sidecar:
     image: "daprio/daprd:edge"
@@ -132,12 +147,16 @@ services:
       "--app-channel-address", "w3",
       "--app-port", "3000",
       "--resources-path", "/components",
-      "--placement-host-address", "placement:50006",
+      "--placement-host-address", "placement3:50006",
     ]
     volumes:
       - "./redis/components:/components"
     depends_on:
       - redis
+
+  placement3:
+    image: "daprio/placement:edge"
+    command: [ "./placement", "--port", "50006" ]
 
   w4:
     build: .
@@ -145,8 +164,11 @@ services:
       - PHILOSOPHER_ID=4
       - DAPR_HTTP_ENDPOINT=http://w4-sidecar:3500
       - DAPR_GRPC_ENDPOINT=http://w4-sidecar:50001
+      - METRICS_DIRECTORY=/metrics
     depends_on:
       - w4-sidecar
+    volumes:
+      - "./output/w4/metrics:/metrics"
 
   w4-sidecar:
     image: "daprio/daprd:edge"
@@ -156,12 +178,16 @@ services:
       "--app-channel-address", "w4",
       "--app-port", "3000",
       "--resources-path", "/components",
-      "--placement-host-address", "placement:50006",
+      "--placement-host-address", "placement4:50006",
     ]
     volumes:
       - "./redis/components:/components"
     depends_on:
       - redis
+
+  placement4:
+    image: "daprio/placement:edge"
+    command: [ "./placement", "--port", "50006" ]
 
   w5:
     build: .
@@ -169,8 +195,11 @@ services:
       - PHILOSOPHER_ID=5
       - DAPR_HTTP_ENDPOINT=http://w5-sidecar:3500
       - DAPR_GRPC_ENDPOINT=http://w5-sidecar:50001
+      - METRICS_DIRECTORY=/metrics
     depends_on:
       - w5-sidecar
+    volumes:
+      - "./output/w5/metrics:/metrics"
 
   w5-sidecar:
     image: "daprio/daprd:edge"
@@ -180,9 +209,13 @@ services:
       "--app-channel-address", "w5",
       "--app-port", "3000",
       "--resources-path", "/components",
-      "--placement-host-address", "placement:50006",
+      "--placement-host-address", "placement5:50006",
     ]
     volumes:
       - "./redis/components:/components"
     depends_on:
       - redis
+
+  placement5:
+    image: "daprio/placement:edge"
+    command: [ "./placement", "--port", "50006" ]
