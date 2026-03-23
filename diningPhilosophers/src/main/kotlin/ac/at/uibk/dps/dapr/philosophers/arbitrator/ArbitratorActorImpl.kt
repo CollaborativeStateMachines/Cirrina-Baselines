@@ -11,9 +11,9 @@ import kotlin.time.toJavaDuration
 import reactor.core.publisher.Mono
 
 class ArbitratorActorImpl(
-    runtimeContext: ActorRuntimeContext<ArbitratorActorImpl>,
-    id: ActorId,
-    val numberOfPhilosophers: Int,
+  runtimeContext: ActorRuntimeContext<ArbitratorActorImpl>,
+  id: ActorId,
+  val numberOfPhilosophers: Int,
 ) : AbstractActor(runtimeContext, id), ArbitratorActor {
 
   companion object {
@@ -69,7 +69,7 @@ class ArbitratorActorImpl(
   private fun getMap(i: Int) = mapOf("id" to i, "time" to System.currentTimeMillis())
 
   private fun measureEventTime(data: Map<String, Any>) =
-      metricsRegistry
-          .timer(EVENT_TIMER_NAME)
-          .update((System.currentTimeMillis() - data["time"] as Long), TimeUnit.MILLISECONDS)
+    metricsRegistry
+      .timer(EVENT_TIMER_NAME)
+      .update((System.currentTimeMillis() - data["time"] as Long), TimeUnit.MILLISECONDS)
 }

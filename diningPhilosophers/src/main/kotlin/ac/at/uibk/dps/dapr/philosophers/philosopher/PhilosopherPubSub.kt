@@ -28,7 +28,7 @@ class PhilosopherPubSub {
   private val id = System.getenv("PHILOSOPHER_ID")
 
   private val philosopherProxy =
-      ActorProxyBuilder(PhilosopherActor::class.java, ActorClient()).build(ActorId("$id"))
+    ActorProxyBuilder(PhilosopherActor::class.java, ActorClient()).build(ActorId("$id"))
 
   @Topic(name = EAT_TOPIC_NAME, pubsubName = PUB_SUB_NAME)
   @PostMapping("/eat")

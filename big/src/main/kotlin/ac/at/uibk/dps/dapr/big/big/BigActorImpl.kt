@@ -10,7 +10,7 @@ import io.dapr.client.DaprClientBuilder
 import kotlin.time.measureTime
 
 class BigActorImpl(runtimeContext: ActorRuntimeContext<BigActorImpl>, val actorId: ActorId) :
-    AbstractActor(runtimeContext, actorId), BigActor {
+  AbstractActor(runtimeContext, actorId), BigActor {
   val client = DaprClientBuilder().build()
 
   var neighbors = emptyList<String>()
@@ -38,13 +38,7 @@ class BigActorImpl(runtimeContext: ActorRuntimeContext<BigActorImpl>, val actorI
       metricRegistry.timer(MetricName.build("pong.duration").tagged("id", actorId.toString()))*/
 
   override fun register() {
-    client
-        .publishEvent(
-            "pubsub",
-            "register",
-            actorId.toString(),
-        )
-        .subscribe()
+    client.publishEvent("pubsub", "register", actorId.toString()).subscribe()
   }
 
   override fun assignNeighbors(neighbors: List<String>) {
@@ -77,16 +71,12 @@ class BigActorImpl(runtimeContext: ActorRuntimeContext<BigActorImpl>, val actorI
       val sender = data["sender"] as String
 
       client
-          .publishEvent(
-              "pubsub",
-              "pong",
-              mapOf(
-                  "sender" to actorId.toString(),
-                  "receiver" to sender,
-                  "time" to System.nanoTime(),
-              ),
-          )
-          .subscribe()
+        .publishEvent(
+          "pubsub",
+          "pong",
+          mapOf("sender" to actorId.toString(), "receiver" to sender, "time" to System.nanoTime()),
+        )
+        .subscribe()
     }
     // pongTimer.update(delta.toJavaDuration())
   }
@@ -94,15 +84,11 @@ class BigActorImpl(runtimeContext: ActorRuntimeContext<BigActorImpl>, val actorI
   private fun sendPing() {
     target = neighbors.random()
     client
-        .publishEvent(
-            "pubsub",
-            "ping",
-            mapOf(
-                "sender" to actorId.toString(),
-                "receiver" to target,
-                "time" to System.nanoTime(),
-            ),
-        )
-        .subscribe()
+      .publishEvent(
+        "pubsub",
+        "ping",
+        mapOf("sender" to actorId.toString(), "receiver" to target, "time" to System.nanoTime()),
+      )
+      .subscribe()
   }
 }

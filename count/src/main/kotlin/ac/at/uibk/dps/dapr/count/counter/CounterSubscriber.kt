@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController
 class CounterSubscriber {
   private val actorClient = ActorClient()
   private val counterProxy =
-      ActorProxyBuilder(CounterActor::class.java, actorClient).build(ActorId("counter-1"))
+    ActorProxyBuilder(CounterActor::class.java, actorClient).build(ActorId("counter-1"))
 
   @Topic(name = "increment", pubsubName = "pubsub")
   @PostMapping("/increment")

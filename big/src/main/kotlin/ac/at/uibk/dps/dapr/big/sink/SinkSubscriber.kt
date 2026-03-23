@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController
 class SinkSubscriber {
 
   private val sinkProxy =
-      ActorProxyBuilder(SinkActor::class.java, ActorClient()).build(ActorId("sink-1"))
+    ActorProxyBuilder(SinkActor::class.java, ActorClient()).build(ActorId("sink-1"))
 
   @Topic(name = "register", pubsubName = "pubsub")
   @PostMapping("/register")

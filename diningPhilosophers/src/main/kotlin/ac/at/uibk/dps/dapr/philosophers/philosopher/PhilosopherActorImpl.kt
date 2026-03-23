@@ -12,7 +12,7 @@ import kotlin.time.toJavaDuration
 import reactor.core.publisher.Mono
 
 class PhilosopherActorImpl(runtimeContext: ActorRuntimeContext<PhilosopherActorImpl>, id: ActorId) :
-    AbstractActor(runtimeContext, id), PhilosopherActor {
+  AbstractActor(runtimeContext, id), PhilosopherActor {
 
   companion object {
     const val COUNTER_NAME = "philosopher.meals"
@@ -33,15 +33,15 @@ class PhilosopherActorImpl(runtimeContext: ActorRuntimeContext<PhilosopherActorI
   override fun eat(data: Map<String, Any>): Mono<Void> {
     val time = data["time"] as Long
     metricsRegistry
-        .timer(EVENT_TIMER_NAME)!!
-        .update((System.currentTimeMillis() - time), TimeUnit.MILLISECONDS)
+      .timer(EVENT_TIMER_NAME)!!
+      .update((System.currentTimeMillis() - time), TimeUnit.MILLISECONDS)
     val delta = measureTime {
       completedRounds++
       metricsRegistry.counter(COUNTER_NAME).inc(1L)
       val delay =
-          Mono.delay(Duration.ofMillis(eatingDuration.toLong())).flatMap {
-            ArbitratorPubSub.doneEating(DiningPhilosophers.daprClient, getMap())
-          }
+        Mono.delay(Duration.ofMillis(eatingDuration.toLong())).flatMap {
+          ArbitratorPubSub.doneEating(DiningPhilosophers.daprClient, getMap())
+        }
       delay.then(ArbitratorPubSub.requestForks(DiningPhilosophers.daprClient, getMap())).subscribe()
     }
     metricsRegistry.timer(EAT_DURATION_NAME).update(delta.toJavaDuration())
@@ -49,5 +49,5 @@ class PhilosopherActorImpl(runtimeContext: ActorRuntimeContext<PhilosopherActorI
   }
 
   private fun getMap(): Map<String, Any> =
-      mapOf("id" to id.toString(), "time" to System.currentTimeMillis())
+    mapOf("id" to id.toString(), "time" to System.currentTimeMillis())
 }

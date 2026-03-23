@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController
 class MallSubscriber {
   private val actorClient = ActorClient()
   private val mallProxy =
-      ActorProxyBuilder(MallActor::class.java, actorClient).build(ActorId("mall-1"))
+    ActorProxyBuilder(MallActor::class.java, actorClient).build(ActorId("mall-1"))
 
   @Topic(name = "request", pubsubName = "pubsub")
   @PostMapping("/request")

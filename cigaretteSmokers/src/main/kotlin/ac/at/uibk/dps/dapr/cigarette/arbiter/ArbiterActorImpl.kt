@@ -7,7 +7,7 @@ import io.dapr.client.DaprClient
 import io.dapr.client.DaprClientBuilder
 
 class ArbiterActorImpl(runtimeContext: ActorRuntimeContext<ArbiterActorImpl>, actorId: ActorId) :
-    AbstractActor(runtimeContext, actorId), ArbiterActor {
+  AbstractActor(runtimeContext, actorId), ArbiterActor {
 
   val client: DaprClient = DaprClientBuilder().build()
   val ingredients = listOf("smoker-0", "smoker-1", "smoker-2")

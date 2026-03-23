@@ -7,8 +7,8 @@ import io.dapr.client.DaprClientBuilder
 import kotlin.random.Random
 
 class ChameneosActorImpl(
-    runtimeContext: ActorRuntimeContext<ChameneosActorImpl>,
-    val actorId: ActorId,
+  runtimeContext: ActorRuntimeContext<ChameneosActorImpl>,
+  val actorId: ActorId,
 ) : AbstractActor(runtimeContext, actorId), ChameneosActor {
 
   val client = DaprClientBuilder().build()
@@ -16,23 +16,23 @@ class ChameneosActorImpl(
 
   override fun request() {
     client
-        .publishEvent(
-            "pubsub",
-            "request",
-            mapOf<String, Any>("requestor" to actorId.toString(), "color" to color),
-        )
-        .subscribe()
+      .publishEvent(
+        "pubsub",
+        "request",
+        mapOf<String, Any>("requestor" to actorId.toString(), "color" to color),
+      )
+      .subscribe()
   }
 
   override fun meet(request: MeetRequest) {
     color = if (color == request.partnerColor) color else (color xor request.partnerColor)
     client
-        .publishEvent(
-            "pubsub",
-            "change",
-            mapOf<String, Any>("partner" to request.partner, "color" to color),
-        )
-        .subscribe()
+      .publishEvent(
+        "pubsub",
+        "change",
+        mapOf<String, Any>("partner" to request.partner, "color" to color),
+      )
+      .subscribe()
 
     request()
   }
