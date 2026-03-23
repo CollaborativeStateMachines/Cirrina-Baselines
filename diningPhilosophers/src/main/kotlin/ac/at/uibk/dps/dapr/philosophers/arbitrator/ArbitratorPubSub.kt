@@ -32,7 +32,7 @@ class ArbitratorPubSub {
   }
 
   val arbitratorProxy: ArbitratorActor =
-    ActorProxyBuilder(ArbitratorActor::class.java, ActorClient()).build(ActorId(ARBITRATOR_NAME))
+      ActorProxyBuilder(ArbitratorActor::class.java, ActorClient()).build(ActorId(ARBITRATOR_NAME))
 
   @Topic(name = REQUEST_FORKS_TOPIC_NAME, pubsubName = PUB_SUB_NAME)
   @PostMapping("/requestForks")

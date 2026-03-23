@@ -27,8 +27,8 @@ class BarberPubSub {
   }
 
   val barberActor: BarberActor? =
-    ActorProxyBuilder(BarberActor::class.java, SleepingBarber.actorClient)
-      .build(ActorId(BARBER_NAME))
+      ActorProxyBuilder(BarberActor::class.java, SleepingBarber.actorClient)
+          .build(ActorId(BARBER_NAME))
 
   @Topic(name = CUTTING_TOPIC, pubsubName = PUB_SUB_NAME)
   @PostMapping("/$CUTTING_TOPIC")
