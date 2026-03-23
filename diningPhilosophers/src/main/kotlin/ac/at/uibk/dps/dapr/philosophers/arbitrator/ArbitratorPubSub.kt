@@ -19,7 +19,7 @@ class ArbitratorPubSub {
   companion object {
     const val REQUEST_FORKS_TOPIC_NAME = "requestForks"
     const val DONE_EATING_TOPIC_NAME = "doneEating"
-    const val PUB_SUB_NAME = "arbitrator_pub_sub"
+    const val PUB_SUB_NAME = "pubsub"
     const val ARBITRATOR_NAME = "arbitrator"
 
     fun requestForks(client: DaprClient, data: Map<String, Any>): Mono<Void> {
