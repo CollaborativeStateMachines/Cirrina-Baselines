@@ -17,9 +17,9 @@ dependencies {
   implementation("io.dapr:dapr-sdk:1.16.0")
   implementation("io.dapr:dapr-sdk-actors:1.16.0")
   implementation("io.dapr:dapr-sdk-springboot:1.16.0")
-  implementation("io.micrometer:micrometer-core:1.17.0-M1")
-  implementation("io.micrometer:micrometer-registry-influx:1.17.0-M1")
   implementation("org.springframework.boot:spring-boot-starter-actuator")
+  implementation("io.dropwizard.metrics:metrics-core:4.2.38")
+  implementation("io.micrometer:micrometer-core:1.16.4")
 }
 
 application { mainClass.set("ac.at.uibk.dps.dapr.philosophers.DiningPhilosophersKt") }

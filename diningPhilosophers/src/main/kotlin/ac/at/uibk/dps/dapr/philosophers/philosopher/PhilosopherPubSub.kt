@@ -20,8 +20,8 @@ class PhilosopherPubSub {
     const val EAT_TOPIC_NAME = "eat"
     const val PUB_SUB_NAME = "philosopher_pub_sub"
 
-    fun eat(client: DaprClient, id: Int): Mono<Void> {
-      return client.publishEvent(PUB_SUB_NAME, EAT_TOPIC_NAME, id)
+    fun eat(client: DaprClient, data: Map<String, Any>): Mono<Void> {
+      return client.publishEvent(PUB_SUB_NAME, EAT_TOPIC_NAME, data)
     }
   }
 
@@ -32,9 +32,9 @@ class PhilosopherPubSub {
 
   @Topic(name = EAT_TOPIC_NAME, pubsubName = PUB_SUB_NAME)
   @PostMapping("/eat")
-  fun eatSubscriber(@RequestBody event: CloudEvent<Int>) {
-    if (event.data == id.toInt()) {
-      philosopherProxy.eat().subscribe()
+  fun eatSubscriber(@RequestBody event: CloudEvent<Map<String, Any>>) {
+    if (event.data["id"] as Int == id.toInt()) {
+      philosopherProxy.eat(event.data).subscribe()
     }
   }
 }

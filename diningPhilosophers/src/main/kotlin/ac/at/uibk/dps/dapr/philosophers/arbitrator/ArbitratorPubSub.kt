@@ -22,12 +22,12 @@ class ArbitratorPubSub {
     const val PUB_SUB_NAME = "arbitrator_pub_sub"
     const val ARBITRATOR_NAME = "arbitrator"
 
-    fun requestForks(client: DaprClient, id: Int): Mono<Void> {
-      return client.publishEvent(PUB_SUB_NAME, REQUEST_FORKS_TOPIC_NAME, id)
+    fun requestForks(client: DaprClient, data: Map<String, Any>): Mono<Void> {
+      return client.publishEvent(PUB_SUB_NAME, REQUEST_FORKS_TOPIC_NAME, data)
     }
 
-    fun doneEating(client: DaprClient, id: Int): Mono<Void> {
-      return client.publishEvent(PUB_SUB_NAME, DONE_EATING_TOPIC_NAME, id)
+    fun doneEating(client: DaprClient, data: Map<String, Any>): Mono<Void> {
+      return client.publishEvent(PUB_SUB_NAME, DONE_EATING_TOPIC_NAME, data)
     }
   }
 
@@ -36,13 +36,13 @@ class ArbitratorPubSub {
 
   @Topic(name = REQUEST_FORKS_TOPIC_NAME, pubsubName = PUB_SUB_NAME)
   @PostMapping("/requestForks")
-  fun requestForksSubscriber(@RequestBody(required = true) event: CloudEvent<Int>) {
+  fun requestForksSubscriber(@RequestBody(required = true) event: CloudEvent<Map<String, Any>>) {
     arbitratorProxy.requestForks(event.data).subscribe()
   }
 
   @Topic(name = DONE_EATING_TOPIC_NAME, pubsubName = PUB_SUB_NAME)
   @PostMapping("/doneEating")
-  fun doneEatingSubscriber(@RequestBody(required = true) event: CloudEvent<Int>) {
+  fun doneEatingSubscriber(@RequestBody(required = true) event: CloudEvent<Map<String, Any>>) {
     arbitratorProxy.doneEating(event.data).subscribe()
   }
 }

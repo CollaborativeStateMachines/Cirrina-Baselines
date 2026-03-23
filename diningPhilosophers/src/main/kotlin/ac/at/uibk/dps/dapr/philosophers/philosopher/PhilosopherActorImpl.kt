@@ -5,36 +5,49 @@ import ac.at.uibk.dps.dapr.philosophers.arbitrator.ArbitratorPubSub
 import io.dapr.actors.ActorId
 import io.dapr.actors.runtime.AbstractActor
 import io.dapr.actors.runtime.ActorRuntimeContext
-import io.micrometer.core.instrument.Metrics
 import java.time.Duration
+import java.util.concurrent.TimeUnit
+import kotlin.time.measureTime
+import kotlin.time.toJavaDuration
 import reactor.core.publisher.Mono
 
 class PhilosopherActorImpl(runtimeContext: ActorRuntimeContext<PhilosopherActorImpl>, id: ActorId) :
   AbstractActor(runtimeContext, id), PhilosopherActor {
 
   companion object {
-    const val COUNTER_NAME = "total_meals"
+    const val COUNTER_NAME = "philosopher.meals"
+    const val EVENT_TIMER_NAME = "event.latency"
+    const val EAT_DURATION_NAME = "eat.duration"
   }
 
   private val eatingDuration = System.getenv("EATING_DURATION")?.toInt() ?: 0
 
   var completedRounds: Int = 0
 
-  var metricsCounter = Metrics.counter(COUNTER_NAME, "philosopher", id.toString())
+  val metricsRegistry = DiningPhilosophers.provideMetricRegistry()
 
   override fun start(): Mono<Void> {
-    return ArbitratorPubSub.requestForks(DiningPhilosophers.daprClient, id.toString().toInt())
+    return ArbitratorPubSub.requestForks(DiningPhilosophers.daprClient, getMap())
   }
 
-  override fun eat(): Mono<Void> {
-    completedRounds++
-    metricsCounter.increment()
-    val delay =
-      Mono.delay(Duration.ofMillis(eatingDuration.toLong())).flatMap {
-        ArbitratorPubSub.doneEating(DiningPhilosophers.daprClient, id.toString().toInt())
-      }
-    return delay.then(
-      ArbitratorPubSub.requestForks(DiningPhilosophers.daprClient, id.toString().toInt())
-    )
+  override fun eat(data: Map<String, Any>): Mono<Void> {
+    val time = data["time"] as Long
+    metricsRegistry
+      .timer(EVENT_TIMER_NAME)!!
+      .update((System.currentTimeMillis() - time), TimeUnit.MILLISECONDS)
+    val delta = measureTime {
+      completedRounds++
+      metricsRegistry.counter(COUNTER_NAME).inc(1L)
+      val delay =
+        Mono.delay(Duration.ofMillis(eatingDuration.toLong())).flatMap {
+          ArbitratorPubSub.doneEating(DiningPhilosophers.daprClient, getMap())
+        }
+      delay.then(ArbitratorPubSub.requestForks(DiningPhilosophers.daprClient, getMap())).subscribe()
+    }
+    metricsRegistry.timer(EAT_DURATION_NAME).update(delta.toJavaDuration())
+    return Mono.empty()
   }
+
+  private fun getMap(): Map<String, Any> =
+    mapOf("id" to id.toString(), "time" to System.currentTimeMillis())
 }
