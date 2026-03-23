@@ -18,7 +18,7 @@ class PhilosopherPubSub {
 
   companion object {
     const val EAT_TOPIC_NAME = "eat"
-    const val PUB_SUB_NAME = "philosopher_pub_sub"
+    const val PUB_SUB_NAME = "pubsub"
 
     fun eat(client: DaprClient, data: Map<String, Any>): Mono<Void> {
       return client.publishEvent(PUB_SUB_NAME, EAT_TOPIC_NAME, data)

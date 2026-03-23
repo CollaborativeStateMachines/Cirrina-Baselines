@@ -9,7 +9,7 @@ from tqdm import tqdm
 en.init_logging(level=logging.INFO)
 
 # --- Experiment parameters ---
-ACTOR_IMAGE = "dapr-philosophers"
+ACTOR_IMAGE = "collaborativestatemachines/cirrina-baselines-diningPhilosophers"
 REDIS_IMAGE = "redis:8.2.4-alpine"
 SIDECAR_IMAGE = "daprio/daprd:edge"
 PLACEMENT_IMAGE = "daprio/placement:1.16.0"
@@ -45,20 +45,7 @@ arbitrator_addr = roles["arbitrator"][0].address
 pubsub_yaml = f"""apiVersion: dapr.io/v1alpha1
 kind: Component
 metadata:
-  name: philosopher_pub_sub
-spec:
-  type: pubsub.redis
-  version: v1
-  metadata:
-    - name: redisHost
-      value: "{arbitrator_addr}:6379"
-    - name: redisPassword
-      value: ""
----
-apiVersion: dapr.io/v1alpha1
-kind: Component
-metadata:
-  name: arbitrator_pub_sub
+  name: pubsub
 spec:
   type: pubsub.redis
   version: v1
@@ -69,12 +56,7 @@ spec:
       value: ""
 """
 
-Path("./redis/components-grid5000/pubsub.yaml").write_text(pubsub_yaml)
-
-# Load custom app image onto all nodes
-with en.actions(roles=roles) as a:
-    a.copy(src="./dapr-philosophers.tar.gz", dest="/tmp/dapr-philosophers.tar.gz")
-    a.shell("docker load -i /tmp/dapr-philosophers.tar.gz")
+Path("../config/redis/components-grid5000/pubsub.yaml").write_text(pubsub_yaml)
 
 # Network emulation
 netem = en.NetemHTB()
@@ -93,7 +75,7 @@ for run_idx in range(1, NUM_RUNS + 1):
         a.file(path="/tmp/metrics", state="absent")
         a.file(path="/tmp/metrics", state="directory", mode="0777")
         a.file(path=COMPONENTS_PATH, state="directory")
-        a.copy(src="./redis/components-grid5000/", dest=COMPONENTS_PATH + "/")
+        a.copy(src="../config/redis/components-grid5000/", dest=COMPONENTS_PATH + "/")
 
     # Deploy Containers on Arbitrator
     with en.actions(roles=roles["arbitrator"]) as a:
