@@ -4,9 +4,9 @@ import io.dapr.actors.ActorId
 import io.dapr.actors.runtime.AbstractActor
 import io.dapr.actors.runtime.ActorRuntimeContext
 import io.dapr.client.DaprClientBuilder
-import io.dropwizard.metrics5.CsvReporter
-import io.dropwizard.metrics5.MetricName
-import io.dropwizard.metrics5.MetricRegistry
+//import io.dropwizard.metrics5.CsvReporter
+//import io.dropwizard.metrics5.MetricName
+//import io.dropwizard.metrics5.MetricRegistry
 import java.nio.file.Paths
 import java.util.concurrent.TimeUnit
 import kotlin.time.measureTime
@@ -20,7 +20,7 @@ class BigActorImpl(runtimeContext: ActorRuntimeContext<BigActorImpl>, val actorI
   var target: String = ""
   var count = 0
 
-  var metricRegistry: MetricRegistry =
+  /*var metricRegistry: MetricRegistry =
       MetricRegistry().apply {
         CsvReporter.forRegistry(this)
             .build(Paths.get("/metrics").toAbsolutePath().toFile())
@@ -38,7 +38,7 @@ class BigActorImpl(runtimeContext: ActorRuntimeContext<BigActorImpl>, val actorI
   var pingTimer =
       metricRegistry.timer(MetricName.build("ping.duration").tagged("id", actorId.toString()))
   var pongTimer =
-      metricRegistry.timer(MetricName.build("pong.duration").tagged("id", actorId.toString()))
+      metricRegistry.timer(MetricName.build("pong.duration").tagged("id", actorId.toString()))*/
 
   override fun register() {
     client
@@ -58,7 +58,7 @@ class BigActorImpl(runtimeContext: ActorRuntimeContext<BigActorImpl>, val actorI
   override fun receivePong(data: Map<String, Any>) {
     val delta = measureTime {
       val time = data["time"] as Long
-      eventTimer.update((System.nanoTime() - time) / 1_000, TimeUnit.MICROSECONDS)
+      //eventTimer.update((System.nanoTime() - time) / 1_000, TimeUnit.MICROSECONDS)
 
       val sender = data["sender"] as String
 
@@ -66,16 +66,16 @@ class BigActorImpl(runtimeContext: ActorRuntimeContext<BigActorImpl>, val actorI
         sendPing()
         ++count
 
-        counter.inc()
+        //counter.inc()
       }
     }
-    pingTimer.update(delta.toJavaDuration())
+    //pingTimer.update(delta.toJavaDuration())
   }
 
   override fun sendPong(data: Map<String, Any>) {
     val delta = measureTime {
       val time = data["time"] as Long
-      eventTimer.update((System.nanoTime() - time) / 1_000, TimeUnit.MICROSECONDS)
+      //eventTimer.update((System.nanoTime() - time) / 1_000, TimeUnit.MICROSECONDS)
 
       val sender = data["sender"] as String
 
@@ -91,7 +91,7 @@ class BigActorImpl(runtimeContext: ActorRuntimeContext<BigActorImpl>, val actorI
           )
           .subscribe()
     }
-    pongTimer.update(delta.toJavaDuration())
+    //pongTimer.update(delta.toJavaDuration())
   }
 
   private fun sendPing() {

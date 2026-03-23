@@ -1,27 +1,7 @@
 plugins {
-  kotlin("jvm") version "2.3.0"
-  kotlin("plugin.spring") version "2.1.20"
-  id("org.springframework.boot") version "3.4.4"
-  id("io.spring.dependency-management") version "1.1.7"
-  id("com.ncorti.ktfmt.gradle") version "0.25.0"
-  application
+  id("common-conventions")
 }
 
-java { toolchain { languageVersion = JavaLanguageVersion.of(25) } }
-
-repositories { mavenCentral() }
-
-dependencies {
-  implementation("org.springframework.boot:spring-boot-starter-web")
-  implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
-  implementation("io.dapr:dapr-sdk:1.16.0")
-  implementation("io.dapr:dapr-sdk-actors:1.16.0")
-  implementation("io.dapr:dapr-sdk-springboot:1.16.0")
-  implementation("org.springframework.boot:spring-boot-starter-actuator")
-  implementation("io.dropwizard.metrics:metrics-core:4.2.38")
-  implementation("io.micrometer:micrometer-core:1.16.4")
+application {
+  mainClass.set("ac.at.uibk.dps.dapr.philosophers.DiningPhilosophersKt")
 }
-
-application { mainClass.set("ac.at.uibk.dps.dapr.philosophers.DiningPhilosophersKt") }
-
-ktfmt { googleStyle() }
