@@ -16,7 +16,7 @@ class ChameneosSubscriber {
   private val id = System.getenv("CHAMENEOS_ID")
   private val actorClient = ActorClient()
   private val chameneosProxy =
-      ActorProxyBuilder(ChameneosActor::class.java, actorClient).build(ActorId("$id"))
+    ActorProxyBuilder(ChameneosActor::class.java, actorClient).build(ActorId("$id"))
 
   @Topic(name = "meet", pubsubName = "pubsub")
   @PostMapping("/meet")

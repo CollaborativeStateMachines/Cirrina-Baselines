@@ -7,7 +7,7 @@ import io.dapr.client.DaprClient
 import io.dapr.client.DaprClientBuilder
 
 class SmokerActorImpl(runtimeContext: ActorRuntimeContext<SmokerActorImpl>, val actorId: ActorId) :
-    AbstractActor(runtimeContext, actorId), SmokerActor {
+  AbstractActor(runtimeContext, actorId), SmokerActor {
 
   val client: DaprClient = DaprClientBuilder().build()
 

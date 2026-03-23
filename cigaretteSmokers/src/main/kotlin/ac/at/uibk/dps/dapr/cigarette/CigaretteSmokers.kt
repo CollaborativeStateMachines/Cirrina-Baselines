@@ -30,7 +30,7 @@ class AutoStarter : ApplicationRunner {
     if (role != "arbiter") return
 
     val proxy =
-        ActorProxyBuilder(ArbiterActor::class.java, ActorClient()).build(ActorId("arbiter-1"))
+      ActorProxyBuilder(ArbiterActor::class.java, ActorClient()).build(ActorId("arbiter-1"))
     proxy.provide()
   }
 }

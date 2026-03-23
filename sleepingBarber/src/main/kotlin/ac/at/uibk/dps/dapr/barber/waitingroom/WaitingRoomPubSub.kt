@@ -32,8 +32,7 @@ class WaitingRoomPubSub {
   }
 
   val waitingRoomActor: WaitingRoomActor? =
-      ActorProxyBuilder(WaitingRoomActor::class.java, ActorClient())
-          .build(ActorId(WAITING_ROOM_NAME))
+    ActorProxyBuilder(WaitingRoomActor::class.java, ActorClient()).build(ActorId(WAITING_ROOM_NAME))
 
   @Topic(name = NEW_CUSTOMER_TOPIC, pubsubName = PUB_SUB_NAME)
   @PostMapping("/$NEW_CUSTOMER_TOPIC")

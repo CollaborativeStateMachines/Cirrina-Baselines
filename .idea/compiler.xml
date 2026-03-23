@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <bytecodeTargetLevel target="25" />
+  </component>
+  <component name="JavacSettings">
+    <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="cirrina-baselines.big" options="-parameters" />
+      <module name="cirrina-baselines.big.main" options="-parameters" />
+      <module name="cirrina-baselines.big.test" options="-parameters" />
+      <module name="cirrina-baselines.chameneos" options="-parameters" />
+      <module name="cirrina-baselines.chameneos.main" options="-parameters" />
+      <module name="cirrina-baselines.chameneos.test" options="-parameters" />
+      <module name="cirrina-baselines.cigaretteSmokers" options="-parameters" />
+      <module name="cirrina-baselines.cigaretteSmokers.main" options="-parameters" />
+      <module name="cirrina-baselines.cigaretteSmokers.test" options="-parameters" />
+      <module name="cirrina-baselines.count" options="-parameters" />
+      <module name="cirrina-baselines.count.main" options="-parameters" />
+      <module name="cirrina-baselines.count.test" options="-parameters" />
+      <module name="cirrina-baselines.diningPhilosophers" options="-parameters" />
+      <module name="cirrina-baselines.diningPhilosophers.main" options="-parameters" />
+      <module name="cirrina-baselines.diningPhilosophers.test" options="-parameters" />
+      <module name="cirrina-baselines.sleepingBarber" options="-parameters" />
+      <module name="cirrina-baselines.sleepingBarber.main" options="-parameters" />
+      <module name="cirrina-baselines.sleepingBarber.test" options="-parameters" />
+    </option>
+  </component>
+</project>

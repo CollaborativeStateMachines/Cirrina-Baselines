@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController
 class ArbiterSubscriber {
 
   private val arbiterProxy =
-      ActorProxyBuilder(ArbiterActor::class.java, ActorClient()).build(ActorId("arbiter-1"))
+    ActorProxyBuilder(ArbiterActor::class.java, ActorClient()).build(ActorId("arbiter-1"))
 
   @Topic(name = "done", pubsubName = "pubsub")
   @PostMapping("/done")

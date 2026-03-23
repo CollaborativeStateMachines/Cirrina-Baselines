@@ -15,7 +15,7 @@ class BigSubscriber {
   private val id = System.getenv("BIG_ID")
 
   private val bigProxy =
-      ActorProxyBuilder(BigActor::class.java, ActorClient()).build(ActorId("$id"))
+    ActorProxyBuilder(BigActor::class.java, ActorClient()).build(ActorId("$id"))
 
   @Topic(name = "neighbors", pubsubName = "pubsub")
   @PostMapping("/neighbors")

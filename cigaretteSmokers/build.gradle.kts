@@ -1,7 +1,3 @@
-plugins {
-  id("common-conventions")
-}
+plugins { id("common-conventions") }
 
-application {
-  mainClass.set("ac.at.uibk.dps.dapr.cigarette.CigaretteSmokersKt")
-}
+application { mainClass.set("ac.at.uibk.dps.dapr.cigarette.CigaretteSmokersKt") }

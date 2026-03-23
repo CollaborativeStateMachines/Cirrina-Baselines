@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController
 class SmokerSubscriber {
   private val id = System.getenv("SMOKER_ID")
   private val smokerProxy =
-      ActorProxyBuilder(SmokerActor::class.java, ActorClient()).build(ActorId("$id"))
+    ActorProxyBuilder(SmokerActor::class.java, ActorClient()).build(ActorId("$id"))
 
   @Topic(name = "provide", pubsubName = "pubsub")
   @PostMapping("/provide")

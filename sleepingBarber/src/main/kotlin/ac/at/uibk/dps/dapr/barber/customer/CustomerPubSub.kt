@@ -38,7 +38,7 @@ class CustomerPubSub {
   val id = System.getenv("CUSTOMER_ID")?.toInt() ?: 0
 
   val customerProxy: CustomerActor? =
-      ActorProxyBuilder(CustomerActor::class.java, ActorClient()).build(ActorId(id.toString()))
+    ActorProxyBuilder(CustomerActor::class.java, ActorClient()).build(ActorId(id.toString()))
 
   @Topic(name = ENTER_TOPIC, pubsubName = PUB_SUB_NAME)
   @PostMapping("/$ENTER_TOPIC")

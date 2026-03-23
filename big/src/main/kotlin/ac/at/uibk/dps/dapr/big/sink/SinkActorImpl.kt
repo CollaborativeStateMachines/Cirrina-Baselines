@@ -6,7 +6,7 @@ import io.dapr.actors.runtime.ActorRuntimeContext
 import io.dapr.client.DaprClientBuilder
 
 class SinkActorImpl(runtimeContext: ActorRuntimeContext<SinkActorImpl>, actorId: ActorId) :
-    AbstractActor(runtimeContext, actorId), SinkActor {
+  AbstractActor(runtimeContext, actorId), SinkActor {
 
   val client = DaprClientBuilder().build()
   var bigs = mutableListOf<String>()
