@@ -11,7 +11,7 @@ import java.util.Queue
 import reactor.core.publisher.Mono
 
 class WaitingRoomActorImpl(runtimeContext: ActorRuntimeContext<WaitingRoomActorImpl>, id: ActorId) :
-  AbstractActor(runtimeContext, id), WaitingRoomActor {
+    AbstractActor(runtimeContext, id), WaitingRoomActor {
 
   val client = SleepingBarber.daprClient
 

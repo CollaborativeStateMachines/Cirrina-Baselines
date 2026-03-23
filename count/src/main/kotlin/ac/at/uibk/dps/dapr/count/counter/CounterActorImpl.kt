@@ -7,7 +7,7 @@ import io.micrometer.core.instrument.Counter
 import io.micrometer.core.instrument.Metrics
 
 class CounterActorImpl(runtimeContext: ActorRuntimeContext<CounterActorImpl>, actorId: ActorId) :
-  AbstractActor(runtimeContext, actorId), CounterActor {
+    AbstractActor(runtimeContext, actorId), CounterActor {
 
   var count = 0
   var counter: Counter = Metrics.counter("counter.count")

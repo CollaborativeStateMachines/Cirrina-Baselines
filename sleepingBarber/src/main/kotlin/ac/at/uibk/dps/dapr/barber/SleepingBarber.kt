@@ -30,7 +30,7 @@ class SleepingBarber {
 fun main(args: Array<String>) {
   val role = System.getenv("ROLE") ?: "customer"
   if (role == "waiting_room")
-    ActorRuntime.getInstance().registerActor(WaitingRoomActorImpl::class.java)
+      ActorRuntime.getInstance().registerActor(WaitingRoomActorImpl::class.java)
   if (role == "barber") ActorRuntime.getInstance().registerActor(BarberActorImpl::class.java)
   if (role == "customer") ActorRuntime.getInstance().registerActor(CustomerActorImpl::class.java)
   runApplication<SleepingBarber>(*args)
@@ -44,7 +44,7 @@ class AutoStarter : ApplicationRunner {
     if (role != "customer") return
     val id = System.getenv("CUSTOMER_ID")
     val proxy =
-      ActorProxyBuilder(CustomerActor::class.java, SleepingBarber.actorClient).build(ActorId(id))
+        ActorProxyBuilder(CustomerActor::class.java, SleepingBarber.actorClient).build(ActorId(id))
     proxy.enterWaitingRoom().subscribe()
     SleepingBarber.logger.info("customer $id started initial")
   }

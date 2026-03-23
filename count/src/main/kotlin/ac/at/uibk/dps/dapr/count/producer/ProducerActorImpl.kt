@@ -8,13 +8,13 @@ import io.dapr.client.DaprClientBuilder
 import reactor.core.publisher.Flux
 
 class ProducerActorImpl(runtimeContext: ActorRuntimeContext<ProducerActorImpl>, actorId: ActorId) :
-  AbstractActor(runtimeContext, actorId), ProducerActor {
+    AbstractActor(runtimeContext, actorId), ProducerActor {
   val client: DaprClient = DaprClientBuilder().build()
   var startTime = 0L
 
   override fun produce() {
     Flux.range(1, Int.MAX_VALUE)
-      .flatMap({ client.publishEvent("pubsub", "increment", System.nanoTime()) }, 100)
-      .subscribe()
+        .flatMap({ client.publishEvent("pubsub", "increment", System.nanoTime()) }, 100)
+        .subscribe()
   }
 }

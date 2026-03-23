@@ -6,7 +6,7 @@ import io.dapr.actors.runtime.ActorRuntimeContext
 import io.dapr.client.DaprClientBuilder
 
 class MallActorImpl(runtimeContext: ActorRuntimeContext<MallActorImpl>, actorId: ActorId) :
-  AbstractActor(runtimeContext, actorId), MallActor {
+    AbstractActor(runtimeContext, actorId), MallActor {
 
   val client = DaprClientBuilder().build()
   var count = 0
@@ -21,16 +21,16 @@ class MallActorImpl(runtimeContext: ActorRuntimeContext<MallActorImpl>, actorId:
       count++
       val waitingId = waiting.removeAt(0)
       client
-        .publishEvent(
-          "pubsub",
-          "meet",
-          mapOf<String, Any>(
-            "initiator" to waitingId,
-            "partner" to request.requester,
-            "color" to request.color,
-          ),
-        )
-        .subscribe()
+          .publishEvent(
+              "pubsub",
+              "meet",
+              mapOf<String, Any>(
+                  "initiator" to waitingId,
+                  "partner" to request.requester,
+                  "color" to request.color,
+              ),
+          )
+          .subscribe()
     }
   }
 }

@@ -10,7 +10,7 @@ import io.micrometer.core.instrument.Metrics
 import reactor.core.publisher.Mono
 
 class CustomerActorImpl(runtimeContext: ActorRuntimeContext<CustomerActorImpl>, id: ActorId) :
-  AbstractActor(runtimeContext, id), CustomerActor {
+    AbstractActor(runtimeContext, id), CustomerActor {
 
   companion object {
     const val COUNTER_NAME = "customer_rounds"
