@@ -14,7 +14,7 @@ REDIS_IMAGE = "redis:8.2.4-alpine"
 SIDECAR_IMAGE = "daprio/daprd:edge"
 PLACEMENT_IMAGE = "daprio/placement:1.16.0"
 COMPONENTS_PATH = "/tmp/dapr-components"
-LOCAL_ROOT = Path("./results")
+LOCAL_ROOT = Path("./results/diningPhilosophers/dapr")
 TIME_BEFORE_FETCH = 60 * 20
 NUM_RUNS = 5
 # -------------------------------------
@@ -102,6 +102,7 @@ for run_idx in range(1, NUM_RUNS + 1):
         ],
         volumes=[f"{COMPONENTS_PATH}:/components"],
     )
+    time.sleep(10)
     a.docker_container(
         name="arbitrator", image=ACTOR_IMAGE,
         network_mode="host", state="started",
@@ -140,6 +141,7 @@ for run_idx in range(1, NUM_RUNS + 1):
           ],
           volumes=[f"{COMPONENTS_PATH}:/components"],
       )
+      time.sleep(10)
       a.docker_container(
           name=f"w{i}", image=ACTOR_IMAGE,
           network_mode="host", state="started",
@@ -181,7 +183,7 @@ for run_idx in range(1, NUM_RUNS + 1):
         (host_dir / "tmp").rmdir()
       except OSError:
         pass
-      
+
   # Clean up all containers for next run
   with en.actions(roles=roles) as a:
     a.shell("docker rm -f $(docker ps -aq) || true")
