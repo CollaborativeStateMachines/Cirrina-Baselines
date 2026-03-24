@@ -20,7 +20,7 @@ class PhilosopherActorImpl(runtimeContext: ActorRuntimeContext<PhilosopherActorI
     const val EAT_DURATION_NAME = "eat.duration"
   }
 
-  private val eatingDuration = System.getenv("EATING_DURATION")?.toInt() ?: 0
+  private val eatingDuration = System.getenv("EATING_DURATION")?.toInt() ?: 10
 
   var completedRounds: Int = 0
 
