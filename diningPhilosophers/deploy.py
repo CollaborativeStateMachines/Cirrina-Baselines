@@ -1,9 +1,9 @@
-import enoslib as en
 import logging
-import os
 import tarfile
 import time
 from pathlib import Path
+
+import enoslib as en
 from tqdm import tqdm
 
 en.init_logging(level=logging.INFO)
@@ -21,13 +21,14 @@ NUM_RUNS = 5
 
 # Infrastructure Reservation
 conf = (
-  en.G5kConf.from_settings(job_name=Path(__file__).name, walltime="03:00:00")
-  .add_machine(roles=["arbitrator"], cluster="gros", nodes=1)
-  .add_machine(roles=["worker"], cluster="gros", nodes=6)
+    en.G5kConf.from_settings(job_name=Path(__file__).name, walltime="03:00:00")
+    .add_machine(roles=["arbitrator"], cluster="gros", nodes=1)
+    .add_machine(roles=["worker"], cluster="gros", nodes=6)
 )
 
 provider = en.G5k(conf)
 roles, networks = provider.init()
+roles = en.sync_info(roles, networks)
 
 # Initial Docker engine deployment
 registry_opts = dict(type="external", ip="docker-cache.grid5000.fr", port=80)
@@ -61,132 +62,146 @@ Path("config/redis/components-grid5000/pubsub.yaml").write_text(pubsub_yaml)
 # Network emulation
 netem = en.NetemHTB()
 netem.add_constraints(
-    src=roles["worker"], dest=roles["arbitrator"],
-    delay="40ms", rate="1gbit", symmetric=True
+    src=roles["worker"],
+    dest=roles["arbitrator"],
+    delay="30ms",
+    rate="50mbit",
+    symmetric=False,
+)
+netem.add_constraints(
+    src=roles["arbitrator"],
+    dest=roles["worker"],
+    delay="10ms",
+    rate="1gbit",
+    symmetric=False,
 )
 netem.deploy()
 
 for run_idx in range(1, NUM_RUNS + 1):
-  run_label = f"run{run_idx}"
-  print(f"\n>>> Starting {run_label}...")
+    run_label = f"run{run_idx}"
+    print(f"\n>>> Starting {run_label}...")
 
-  # Ensure a fresh metrics directory on every node and push component files
-  with en.actions(roles=roles) as a:
-    a.file(path="/tmp/metrics", state="absent")
-    a.file(path="/tmp/metrics", state="directory", mode="0777")
-    a.file(path=COMPONENTS_PATH, state="directory")
-    a.copy(src="config/redis/components-grid5000/",
-           dest=COMPONENTS_PATH + "/")
+    # Ensure a fresh metrics directory on every node and push component files
+    with en.actions(roles=roles) as a:
+        a.file(path="/tmp/metrics", state="absent")
+        a.file(path="/tmp/metrics", state="directory", mode="0777")
+        a.file(path=COMPONENTS_PATH, state="directory")
+        a.copy(src="config/redis/components-grid5000/",
+               dest=COMPONENTS_PATH + "/")
 
-  # Deploy Containers on Arbitrator
-  with en.actions(roles=roles["arbitrator"]) as a:
-    a.docker_container(
-        name="redis", image=REDIS_IMAGE,
-        network_mode="host", state="started"
-    )
-    a.docker_container(
-        name="placement", image=PLACEMENT_IMAGE,
-        network_mode="host", state="started",
-        command=["./placement", "--port", "50006"]
-    )
-    a.docker_container(
-        name="arbitrator-sidecar", image=SIDECAR_IMAGE,
-        network_mode="host", state="started",
-        command=[
-          "./daprd",
-          "--app-id", "arbitrator-sidecar",
-          "--app-port", "3000",
-          "--resources-path", "/components",
-          "--placement-host-address", "localhost:50006",
-          "--metrics-port", "9091",
-        ],
-        volumes=[f"{COMPONENTS_PATH}:/components"],
-    )
-    time.sleep(10)
-    a.docker_container(
-        name="arbitrator", image=ACTOR_IMAGE,
-        network_mode="host", state="started",
-        volumes=["/tmp/metrics:/metrics:rw"],
-        env={
-          "ROLE": "arbitrator",
-          "NUMBER_OF_PHILOSOPHERS": "6",
-          "DAPR_HTTP_ENDPOINT": "http://localhost:3500",
-          "DAPR_GRPC_ENDPOINT": "http://localhost:50001",
-          "METRICS_DIRECTORY": "/metrics",
-        },
-    )
+    # Deploy Containers on Arbitrator
+    with en.actions(roles=roles["arbitrator"]) as a:
+        a.docker_container(
+            name="redis", image=REDIS_IMAGE,
+            network_mode="host", state="started"
+        )
+        a.docker_container(
+            name="placement", image=PLACEMENT_IMAGE,
+            network_mode="host", state="started",
+            command=["./placement", "--port", "50006"]
+        )
+        a.docker_container(
+            name="arbitrator-sidecar", image=SIDECAR_IMAGE,
+            network_mode="host", state="started",
+            command=[
+                "./daprd",
+                "--app-id", "arbitrator-sidecar",
+                "--app-port", "3000",
+                "--resources-path", "/components",
+                "--placement-host-address", "localhost:50006",
+                "--metrics-port", "9091",
+            ],
+            volumes=[f"{COMPONENTS_PATH}:/components"],
+        )
+        time.sleep(10)
+        a.docker_container(
+            name="arbitrator", image=ACTOR_IMAGE,
+            network_mode="host", state="started",
+            volumes=["/tmp/metrics:/metrics:rw"],
+            env={
+                "ROLE": "arbitrator",
+                "NUMBER_OF_PHILOSOPHERS": "6",
+                "DAPR_HTTP_ENDPOINT": "http://localhost:3500",
+                "DAPR_GRPC_ENDPOINT": "http://localhost:50001",
+                "METRICS_DIRECTORY": "/metrics",
+            },
+        )
 
-  # Deploy Containers on Workers
-  for i, host in enumerate(roles["worker"]):
-    with en.actions(pattern_hosts=host.address, roles=roles) as a:
-      a.docker_container(
-          name="redis", image=REDIS_IMAGE,
-          network_mode="host", state="started"
-      )
-      a.docker_container(
-          name="placement", image=PLACEMENT_IMAGE,
-          network_mode="host", state="started",
-          command=["./placement", "--port", "50006"]
-      )
-      a.docker_container(
-          name=f"w{i}-sidecar", image=SIDECAR_IMAGE,
-          network_mode="host", state="started",
-          command=[
-            "./daprd",
-            "--app-id", f"w{i}-sidecar",
-            "--app-port", "3000",
-            "--resources-path", "/components",
-            "--placement-host-address", "localhost:50006",
-            "--metrics-port", "9091",
-          ],
-          volumes=[f"{COMPONENTS_PATH}:/components"],
-      )
-      time.sleep(10)
-      a.docker_container(
-          name=f"w{i}", image=ACTOR_IMAGE,
-          network_mode="host", state="started",
-          volumes=["/tmp/metrics:/metrics:rw"],
-          env={
-            "PHILOSOPHER_ID": str(i),
-            "DAPR_HTTP_ENDPOINT": "http://localhost:3500",
-            "DAPR_GRPC_ENDPOINT": "http://localhost:50001",
-            "METRICS_DIRECTORY": "/metrics",
-          },
-      )
+    # Deploy Containers on Workers
+    for i, host in enumerate(roles["worker"]):
+        with en.actions(pattern_hosts=host.address, roles=roles) as a:
+            a.docker_container(
+                name="redis", image=REDIS_IMAGE,
+                network_mode="host", state="started"
+            )
+            a.docker_container(
+                name="placement", image=PLACEMENT_IMAGE,
+                network_mode="host", state="started",
+                command=["./placement", "--port", "50006"]
+            )
+            a.docker_container(
+                name=f"w{i}-sidecar", image=SIDECAR_IMAGE,
+                network_mode="host", state="started",
+                command=[
+                    "./daprd",
+                    "--app-id", f"w{i}-sidecar",
+                    "--app-port", "3000",
+                    "--resources-path", "/components",
+                    "--placement-host-address", "localhost:50006",
+                    "--metrics-port", "9091",
+                ],
+                volumes=[f"{COMPONENTS_PATH}:/components"],
+            )
+            time.sleep(10)
+            a.docker_container(
+                name=f"w{i}", image=ACTOR_IMAGE,
+                network_mode="host", state="started",
+                volumes=["/tmp/metrics:/metrics:rw"],
+                env={
+                    "PHILOSOPHER_ID": str(i),
+                    "DAPR_HTTP_ENDPOINT": "http://localhost:3500",
+                    "DAPR_GRPC_ENDPOINT": "http://localhost:50001",
+                    "METRICS_DIRECTORY": "/metrics",
+                },
+            )
 
-  # Wait for data collection
-  print(f"--- {run_label}: Collecting data for {TIME_BEFORE_FETCH}s ---")
-  for _ in tqdm(range(TIME_BEFORE_FETCH), desc=run_label, unit="s",
-                mininterval=60):
-    time.sleep(1)
+    # Wait for data collection
+    print(f"--- {run_label}: Collecting data for {TIME_BEFORE_FETCH}s ---")
+    for _ in tqdm(range(TIME_BEFORE_FETCH), desc=run_label, unit="s",
+                  mininterval=60):
+        time.sleep(1)
 
-  # Fetch and Organize Results locally into run1, run2, etc.
-  run_dest = LOCAL_ROOT / run_label
-  run_dest.mkdir(parents=True, exist_ok=True)
+    # Capture NTP timing data on all nodes
+    with en.actions(roles=roles) as a:
+        a.shell("ntpq -p > /tmp/metrics/ntp_stats.txt")
 
-  with en.actions(roles=roles) as a:
-    a.archive(path="/tmp/metrics", dest="/tmp/metrics.tar.gz", format="gz")
-    a.fetch(src="/tmp/metrics.tar.gz", dest=str(run_dest), flat=False)
+    # Fetch and Organize Results locally
+    run_dest = LOCAL_ROOT / run_label
+    run_dest.mkdir(parents=True, exist_ok=True)
 
-  # Local extraction
-  print(f"--- {run_label}: Extracting results ---")
-  for host in en.get_hosts(roles):
-    host_dir = run_dest / host.address
-    tar_path = host_dir / "tmp" / "metrics.tar.gz"
+    with en.actions(roles=roles) as a:
+        a.archive(path="/tmp/metrics", dest="/tmp/metrics.tar.gz", format="gz")
+        a.fetch(src="/tmp/metrics.tar.gz", dest=str(run_dest), flat=False)
 
-    if tar_path.exists():
-      with tarfile.open(tar_path, "r:gz") as tar:
-        tar.extractall(path=host_dir)
+    # Local extraction
+    print(f"--- {run_label}: Extracting results ---")
+    for host in en.get_hosts(roles):
+        host_dir = run_dest / host.address
+        tar_path = host_dir / "tmp" / "metrics.tar.gz"
 
-      tar_path.unlink()
-      try:
-        (host_dir / "tmp").rmdir()
-      except OSError:
-        pass
+        if tar_path.exists():
+            with tarfile.open(tar_path, "r:gz") as tar:
+                tar.extractall(path=host_dir)
 
-  # Clean up all containers for next run
-  with en.actions(roles=roles) as a:
-    a.shell("docker rm -f $(docker ps -aq) || true")
+            tar_path.unlink()
+            try:
+                (host_dir / "tmp").rmdir()
+            except OSError:
+                pass
+
+    # Clean up all containers for next run
+    with en.actions(roles=roles) as a:
+        a.shell("docker rm -f $(docker ps -aq) || true")
 
 print(f"\n--- SUCCESS: All {NUM_RUNS} runs finished. Data in {LOCAL_ROOT} ---")
 provider.destroy()
