@@ -5,11 +5,11 @@ import ac.at.uibk.dps.dapr.philosophers.arbitrator.ArbitratorPubSub
 import io.dapr.actors.ActorId
 import io.dapr.actors.runtime.AbstractActor
 import io.dapr.actors.runtime.ActorRuntimeContext
+import reactor.core.publisher.Mono
 import java.time.Duration
 import java.util.concurrent.TimeUnit
 import kotlin.time.measureTime
 import kotlin.time.toJavaDuration
-import reactor.core.publisher.Mono
 
 class PhilosopherActorImpl(runtimeContext: ActorRuntimeContext<PhilosopherActorImpl>, id: ActorId) :
   AbstractActor(runtimeContext, id), PhilosopherActor {
@@ -20,7 +20,7 @@ class PhilosopherActorImpl(runtimeContext: ActorRuntimeContext<PhilosopherActorI
     const val EAT_DURATION_NAME = "eat.duration"
   }
 
-  private val eatingDuration = System.getenv("EATING_DURATION")?.toInt() ?: 0
+  private val eatingDuration = System.getenv("EATING_DURATION")?.toInt() ?: 10
 
   var completedRounds: Int = 0
 
