@@ -12,7 +12,4 @@ FROM gcr.io/distroless/java25-debian13 AS runtime
 
 COPY --from=build /tmp/diningPhilosophers /opt/diningPhilosophers
 
-ENTRYPOINT [ \
-    "java", \
-    "ac.at.uibk.dps.dapr.philosophers.DiningPhilosophersKt" \
-]
+ENTRYPOINT ["java", "-cp", "/opt/diningPhilosophers/lib/*", "ac.at.uibk.dps.dapr.philosophers.DiningPhilosophersKt"]
