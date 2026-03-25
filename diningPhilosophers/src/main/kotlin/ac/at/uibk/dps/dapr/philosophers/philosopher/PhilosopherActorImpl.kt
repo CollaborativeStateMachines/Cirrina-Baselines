@@ -7,6 +7,7 @@ import io.dapr.actors.runtime.AbstractActor
 import io.dapr.actors.runtime.ActorRuntimeContext
 import java.time.Duration
 import java.util.concurrent.TimeUnit
+import kotlin.time.Clock
 import kotlin.time.measureTime
 import kotlin.time.toJavaDuration
 import reactor.core.publisher.Mono
@@ -31,10 +32,11 @@ class PhilosopherActorImpl(runtimeContext: ActorRuntimeContext<PhilosopherActorI
   }
 
   override fun eat(data: Map<String, Any>): Mono<Void> {
-    val time = data["time"] as Long
+    val now = Clock.System.now()
+    val epochNanos = (now.epochSeconds * 1_000_000_000L) + now.nanosecondsOfSecond
     metricsRegistry
       .timer(EVENT_TIMER_NAME)!!
-      .update((System.currentTimeMillis() - time), TimeUnit.MILLISECONDS)
+      .update((epochNanos - data["time"] as Long), TimeUnit.NANOSECONDS)
     val delta = measureTime {
       completedRounds++
       metricsRegistry.counter(COUNTER_NAME).inc(1L)
@@ -48,6 +50,9 @@ class PhilosopherActorImpl(runtimeContext: ActorRuntimeContext<PhilosopherActorI
     return Mono.empty()
   }
 
-  private fun getMap(): Map<String, Any> =
-    mapOf("id" to id.toString(), "time" to System.currentTimeMillis())
+  private fun getMap(): Map<String, Any> {
+    val now = Clock.System.now()
+    val epochNanos = (now.epochSeconds * 1_000_000_000L) + now.nanosecondsOfSecond
+    return mapOf("id" to id.toString(), "time" to epochNanos)
+  }
 }
