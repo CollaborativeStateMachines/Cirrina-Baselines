@@ -21,26 +21,22 @@ class ChameneosSubscriber {
   @Topic(name = "meet", pubsubName = "pubsub")
   @PostMapping("/meet")
   fun handleMeet(@RequestBody body: Map<String, Any>) {
-    val data = body["data"] as? Map<*, *> ?: body
+    val data = body["data"] as? Map<String, Any> ?: body
     val initiator = data["initiator"] as? String ?: return
 
     if (initiator == id) {
-      val partner = data["partner"] as? String ?: return
-      val color = (data["color"] as? Number)?.toInt() ?: return
-
-      chameneosProxy.meet(MeetRequest(partner, color))
+      chameneosProxy.meet(data)
     }
   }
 
   @Topic(name = "change", pubsubName = "pubsub")
   @PostMapping("/change")
   fun handleChange(@RequestBody body: Map<String, Any>) {
-    val data = body["data"] as? Map<*, *> ?: body
+    val data = body["data"] as? Map<String, Any> ?: body
     val partner = data["partner"] as? String ?: return
 
     if (partner == id) {
-      val color = (data["color"] as? Number)?.toInt() ?: return
-      chameneosProxy.change(color)
+      chameneosProxy.change(data)
     }
   }
 }

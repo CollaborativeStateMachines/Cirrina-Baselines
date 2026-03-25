@@ -19,10 +19,8 @@ class MallSubscriber {
   @Topic(name = "request", pubsubName = "pubsub")
   @PostMapping("/request")
   fun handleRequest(@RequestBody body: Map<String, Any>) {
-    val data = body["data"] as? Map<*, *> ?: body
-    val requestor = data["requestor"] as? String ?: return
-    val color = (data["color"] as? Number)?.toInt() ?: return
+    val data = body["data"] as? Map<String, Any> ?: body
 
-    mallProxy.requesting(MallRequest(requestor, color))
+    mallProxy.requesting(data)
   }
 }
