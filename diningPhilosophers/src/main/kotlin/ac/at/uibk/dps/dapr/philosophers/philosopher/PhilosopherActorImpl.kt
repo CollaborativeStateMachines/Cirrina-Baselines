@@ -7,6 +7,7 @@ import io.dapr.actors.runtime.AbstractActor
 import io.dapr.actors.runtime.ActorRuntimeContext
 import java.time.Duration
 import java.util.concurrent.TimeUnit
+import kotlin.time.Clock
 import kotlin.time.measureTime
 import kotlin.time.toJavaDuration
 import reactor.core.publisher.Mono
@@ -31,10 +32,13 @@ class PhilosopherActorImpl(runtimeContext: ActorRuntimeContext<PhilosopherActorI
   }
 
   override fun eat(data: Map<String, Any>): Mono<Void> {
-    val time = data["time"] as Long
-    metricsRegistry
-      .timer(EVENT_TIMER_NAME)!!
-      .update((System.currentTimeMillis() - time), TimeUnit.MILLISECONDS)
+    val now = Clock.System.now()
+    val nowNanos = (now.epochSeconds * 1_000_000_000L) + now.nanosecondsOfSecond
+
+    val deltaNanos = (nowNanos - data["time"] as Long).coerceAtLeast(0L)
+
+    metricsRegistry.timer(EVENT_TIMER_NAME)!!.update((deltaNanos), TimeUnit.NANOSECONDS)
+
     val delta = measureTime {
       completedRounds++
       metricsRegistry.counter(COUNTER_NAME).inc(1L)
@@ -44,10 +48,15 @@ class PhilosopherActorImpl(runtimeContext: ActorRuntimeContext<PhilosopherActorI
         }
       delay.then(ArbitratorPubSub.requestForks(DiningPhilosophers.daprClient, getMap())).subscribe()
     }
+
     metricsRegistry.timer(EAT_DURATION_NAME).update(delta.toJavaDuration())
     return Mono.empty()
   }
 
-  private fun getMap(): Map<String, Any> =
-    mapOf("id" to id.toString(), "time" to System.currentTimeMillis())
+  private fun getMap(): Map<String, Any> {
+    val now = Clock.System.now()
+    val epochNanos = (now.epochSeconds * 1_000_000_000L) + now.nanosecondsOfSecond
+
+    return mapOf("id" to id.toString(), "time" to epochNanos)
+  }
 }

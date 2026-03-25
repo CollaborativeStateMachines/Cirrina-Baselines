@@ -6,6 +6,7 @@ import io.dapr.actors.ActorId
 import io.dapr.actors.runtime.AbstractActor
 import io.dapr.actors.runtime.ActorRuntimeContext
 import java.util.concurrent.TimeUnit
+import kotlin.time.Clock
 import kotlin.time.measureTime
 import kotlin.time.toJavaDuration
 import reactor.core.publisher.Mono
@@ -66,10 +67,19 @@ class ArbitratorActorImpl(
 
   private fun prev(i: Int) = (i - 1 + numberOfPhilosophers) % numberOfPhilosophers
 
-  private fun getMap(i: Int) = mapOf("id" to i, "time" to System.currentTimeMillis())
+  private fun getMap(i: Int): Map<String, Any> {
+    val now = Clock.System.now()
+    val epochNanos = (now.epochSeconds * 1_000_000_000L) + now.nanosecondsOfSecond
 
-  private fun measureEventTime(data: Map<String, Any>) =
-    metricsRegistry
-      .timer(EVENT_TIMER_NAME)
-      .update((System.currentTimeMillis() - data["time"] as Long), TimeUnit.MILLISECONDS)
+    return mapOf("id" to i, "time" to epochNanos)
+  }
+
+  private fun measureEventTime(data: Map<String, Any>) {
+    val now = Clock.System.now()
+    val nowNanos = (now.epochSeconds * 1_000_000_000L) + now.nanosecondsOfSecond
+
+    val deltaNanos = (nowNanos - data["time"] as Long).coerceAtLeast(0L)
+
+    metricsRegistry.timer(EVENT_TIMER_NAME)!!.update((deltaNanos), TimeUnit.NANOSECONDS)
+  }
 }
