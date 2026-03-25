@@ -4,5 +4,5 @@ import io.dapr.actors.ActorType
 
 @ActorType(name = "ArbiterActor")
 interface ArbiterActor {
-  fun provide()
+  fun provide(time: Long)
 }

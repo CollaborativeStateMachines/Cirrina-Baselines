@@ -6,6 +6,7 @@ import io.dapr.actors.client.ActorClient
 import io.dapr.actors.client.ActorProxyBuilder
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
@@ -17,7 +18,7 @@ class ArbiterSubscriber {
 
   @Topic(name = "done", pubsubName = "pubsub")
   @PostMapping("/done")
-  fun handleDone() {
-    arbiterProxy.provide()
+  fun handleDone(@RequestBody body: Map<String, Any>) {
+    arbiterProxy.provide(body["data"] as Long)
   }
 }
