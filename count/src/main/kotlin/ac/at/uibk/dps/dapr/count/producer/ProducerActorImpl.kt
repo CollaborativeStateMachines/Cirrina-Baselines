@@ -19,16 +19,15 @@ class ProducerActorImpl(runtimeContext: ActorRuntimeContext<ProducerActorImpl>, 
 
   override fun produce() {
     while (true) {
-        val delta = measureTime {
-          val now = Clock.System.now()
-          val epochNanos = (now.epochSeconds * 1_000_000_000L) + now.nanosecondsOfSecond
+      val delta = measureTime {
+        val now = Clock.System.now()
+        val epochNanos = (now.epochSeconds * 1_000_000_000L) + now.nanosecondsOfSecond
 
-          client.publishEvent("pubsub", "increment", epochNanos).subscribe()
+        client.publishEvent("pubsub", "increment", epochNanos).subscribe()
 
-          Thread.sleep(10)
-        }
-        produceTimer.update(delta.toJavaDuration())
+        Thread.sleep(10)
       }
+      produceTimer.update(delta.toJavaDuration())
     }
   }
-
+}
