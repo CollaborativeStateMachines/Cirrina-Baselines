@@ -30,12 +30,18 @@ provider = en.G5k(conf)
 roles, networks = provider.init()
 roles = en.sync_info(roles, networks)
 
+print(">>> Installing and configuring Chrony on all nodes...")
+with en.actions(roles=roles) as a:
+    a.apt(name=["chrony"], state="present", update_cache=True)
+    a.service(name="chrony", state="started", enabled=True)
+    a.shell("chronyc makestep")
+
 # Initial Docker engine deployment
 registry_opts = dict(type="external", ip="docker-cache.grid5000.fr", port=80)
 d = en.Docker(
     agent=roles["arbitrator"] + roles["worker"],
     bind_var_docker="/tmp/docker",
-    registry_opts=registry_opts
+    registry_opts=registry_opts,
 )
 d.deploy()
 
@@ -62,8 +68,8 @@ Path("config/redis/components-grid5000/pubsub.yaml").write_text(pubsub_yaml)
 # Network emulation
 netem = en.NetemHTB()
 netem.add_constraints(
-    src=roles["worker"],
-    dest=roles["arbitrator"],
+    src=roles["worker"] + roles["arbitrator"],
+    dest=roles["worker"] + roles["arbitrator"],
     delay="10ms",
     rate="1gbit",
     symmetric=True,
@@ -79,37 +85,46 @@ for run_idx in range(1, NUM_RUNS + 1):
         a.file(path="/tmp/metrics", state="absent")
         a.file(path="/tmp/metrics", state="directory", mode="0777")
         a.file(path=COMPONENTS_PATH, state="directory")
-        a.copy(src="config/redis/components-grid5000/",
-               dest=COMPONENTS_PATH + "/")
+        a.copy(src="config/redis/components-grid5000/", dest=COMPONENTS_PATH + "/")
 
-    # Deploy Containers on Arbitrator
+    # Deploy containers
     with en.actions(roles=roles["arbitrator"]) as a:
         a.docker_container(
-            name="redis", image=REDIS_IMAGE,
-            network_mode="host", state="started"
+            name="redis", image=REDIS_IMAGE, network_mode="host", state="started"
         )
         a.docker_container(
-            name="placement", image=PLACEMENT_IMAGE,
-            network_mode="host", state="started",
-            command=["./placement", "--port", "50006"]
+            name="placement",
+            image=PLACEMENT_IMAGE,
+            network_mode="host",
+            state="started",
+            command=["./placement", "--port", "50006"],
         )
         a.docker_container(
-            name="arbitrator-sidecar", image=SIDECAR_IMAGE,
-            network_mode="host", state="started",
+            name="arbitrator-sidecar",
+            image=SIDECAR_IMAGE,
+            network_mode="host",
+            state="started",
             command=[
                 "./daprd",
-                "--app-id", "arbitrator-sidecar",
-                "--app-port", "3000",
-                "--resources-path", "/components",
-                "--placement-host-address", "localhost:50006",
-                "--metrics-port", "9091",
+                "--app-id",
+                "arbitrator-sidecar",
+                "--app-port",
+                "3000",
+                "--resources-path",
+                "/components",
+                "--placement-host-address",
+                "localhost:50006",
+                "--metrics-port",
+                "9091",
             ],
             volumes=[f"{COMPONENTS_PATH}:/components"],
         )
         time.sleep(10)
         a.docker_container(
-            name="arbitrator", image=ACTOR_IMAGE,
-            network_mode="host", state="started",
+            name="arbitrator",
+            image=ACTOR_IMAGE,
+            network_mode="host",
+            state="started",
             volumes=["/tmp/metrics:/metrics:rw"],
             env={
                 "ROLE": "arbitrator",
@@ -120,35 +135,44 @@ for run_idx in range(1, NUM_RUNS + 1):
             },
         )
 
-    # Deploy Containers on Workers
     for i, host in enumerate(roles["worker"]):
         with en.actions(pattern_hosts=host.address, roles=roles) as a:
             a.docker_container(
-                name="redis", image=REDIS_IMAGE,
-                network_mode="host", state="started"
+                name="redis", image=REDIS_IMAGE, network_mode="host", state="started"
             )
             a.docker_container(
-                name="placement", image=PLACEMENT_IMAGE,
-                network_mode="host", state="started",
-                command=["./placement", "--port", "50006"]
+                name="placement",
+                image=PLACEMENT_IMAGE,
+                network_mode="host",
+                state="started",
+                command=["./placement", "--port", "50006"],
             )
             a.docker_container(
-                name=f"w{i}-sidecar", image=SIDECAR_IMAGE,
-                network_mode="host", state="started",
+                name=f"w{i}-sidecar",
+                image=SIDECAR_IMAGE,
+                network_mode="host",
+                state="started",
                 command=[
                     "./daprd",
-                    "--app-id", f"w{i}-sidecar",
-                    "--app-port", "3000",
-                    "--resources-path", "/components",
-                    "--placement-host-address", "localhost:50006",
-                    "--metrics-port", "9091",
+                    "--app-id",
+                    f"w{i}-sidecar",
+                    "--app-port",
+                    "3000",
+                    "--resources-path",
+                    "/components",
+                    "--placement-host-address",
+                    "localhost:50006",
+                    "--metrics-port",
+                    "9091",
                 ],
                 volumes=[f"{COMPONENTS_PATH}:/components"],
             )
             time.sleep(10)
             a.docker_container(
-                name=f"w{i}", image=ACTOR_IMAGE,
-                network_mode="host", state="started",
+                name=f"w{i}",
+                image=ACTOR_IMAGE,
+                network_mode="host",
+                state="started",
                 volumes=["/tmp/metrics:/metrics:rw"],
                 env={
                     "PHILOSOPHER_ID": str(i),
@@ -160,15 +184,15 @@ for run_idx in range(1, NUM_RUNS + 1):
 
     # Wait for data collection
     print(f"--- {run_label}: Collecting data for {TIME_BEFORE_FETCH}s ---")
-    for _ in tqdm(range(TIME_BEFORE_FETCH), desc=run_label, unit="s",
-                  mininterval=60):
+    for _ in tqdm(range(TIME_BEFORE_FETCH), desc=run_label, unit="s", mininterval=60):
         time.sleep(1)
 
-    # Capture NTP timing data on all nodes
+    # Capture Chrony tracking data
     with en.actions(roles=roles) as a:
-        a.shell("ntpq -p > /tmp/metrics/ntp_stats.txt")
+        a.shell("chronyc tracking > /tmp/metrics/chrony_tracking.txt")
+        a.shell("chronyc sources -v > /tmp/metrics/chrony_sources.txt")
 
-    # Fetch and Organize Results locally
+    # Fetch and organize results
     run_dest = LOCAL_ROOT / run_label
     run_dest.mkdir(parents=True, exist_ok=True)
 
@@ -176,8 +200,12 @@ for run_idx in range(1, NUM_RUNS + 1):
         a.archive(path="/tmp/metrics", dest="/tmp/metrics.tar.gz", format="gz")
         a.fetch(src="/tmp/metrics.tar.gz", dest=str(run_dest), flat=False)
 
-    # Local extraction
-    print(f"--- {run_label}: Extracting results ---")
+    print(f"--- {run_label}: Cleaning up and extracting ---")
+
+    with en.actions(roles=roles) as a:
+        a.shell("docker rm -f $(docker ps -aq) || true")
+
+    # Local file flattening
     for host in en.get_hosts(roles):
         host_dir = run_dest / host.address
         tar_path = host_dir / "tmp" / "metrics.tar.gz"
@@ -191,10 +219,6 @@ for run_idx in range(1, NUM_RUNS + 1):
                 (host_dir / "tmp").rmdir()
             except OSError:
                 pass
-
-    # Clean up all containers for next run
-    with en.actions(roles=roles) as a:
-        a.shell("docker rm -f $(docker ps -aq) || true")
 
 print(f"\n--- SUCCESS: All {NUM_RUNS} runs finished. Data in {LOCAL_ROOT} ---")
 provider.destroy()
