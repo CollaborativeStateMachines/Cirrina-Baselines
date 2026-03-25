@@ -19,6 +19,6 @@ class SmokerSubscriber {
   @Topic(name = "provide", pubsubName = "pubsub")
   @PostMapping("/provide")
   fun handleProvide(@RequestBody body: Map<String, Any>) {
-    smokerProxy.smoke(body["data"] as List<String>)
+    smokerProxy.smoke(body["data"] as Map<String, Any>)
   }
 }

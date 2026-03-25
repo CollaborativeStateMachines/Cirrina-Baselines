@@ -4,5 +4,5 @@ import io.dapr.actors.ActorType
 
 @ActorType(name = "SmokerActor")
 interface SmokerActor {
-  fun smoke(ingredients: List<String>)
+  fun smoke(data: Map<String, Any>)
 }
