@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [ diningPhilosophers, count, cigaretteSmokers ]
+        target: [ diningPhilosophers, count, cigaretteSmokers, chameneos ]
     permissions:
       packages: write
       contents: read
