@@ -10,7 +10,6 @@ class SinkActorImpl(runtimeContext: ActorRuntimeContext<SinkActorImpl>, actorId:
 
   val client = DaprClientBuilder().build()
   var bigs = mutableListOf<String>()
-  var startTime = 0L
 
   override fun register(actor: String) {
     if (!bigs.contains(actor)) {
@@ -22,7 +21,6 @@ class SinkActorImpl(runtimeContext: ActorRuntimeContext<SinkActorImpl>, actorId:
   }
 
   override fun sendNeighbors() {
-    startTime = System.nanoTime()
     client.publishEvent("pubsub", "neighbors", bigs.toList()).subscribe()
     bigs.clear()
   }
