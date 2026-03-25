@@ -33,10 +33,12 @@ class PhilosopherActorImpl(runtimeContext: ActorRuntimeContext<PhilosopherActorI
 
   override fun eat(data: Map<String, Any>): Mono<Void> {
     val now = Clock.System.now()
-    val epochNanos = (now.epochSeconds * 1_000_000_000L) + now.nanosecondsOfSecond
-    metricsRegistry
-      .timer(EVENT_TIMER_NAME)!!
-      .update((epochNanos - data["time"] as Long), TimeUnit.NANOSECONDS)
+    val nowNanos = (now.epochSeconds * 1_000_000_000L) + now.nanosecondsOfSecond
+
+    val deltaNanos = (nowNanos - data["time"] as Long).coerceAtLeast(0L)
+
+    metricsRegistry.timer(EVENT_TIMER_NAME)!!.update((deltaNanos), TimeUnit.NANOSECONDS)
+
     val delta = measureTime {
       completedRounds++
       metricsRegistry.counter(COUNTER_NAME).inc(1L)
@@ -46,6 +48,7 @@ class PhilosopherActorImpl(runtimeContext: ActorRuntimeContext<PhilosopherActorI
         }
       delay.then(ArbitratorPubSub.requestForks(DiningPhilosophers.daprClient, getMap())).subscribe()
     }
+
     metricsRegistry.timer(EAT_DURATION_NAME).update(delta.toJavaDuration())
     return Mono.empty()
   }

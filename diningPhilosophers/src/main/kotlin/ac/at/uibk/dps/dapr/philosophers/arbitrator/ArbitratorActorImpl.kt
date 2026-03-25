@@ -70,14 +70,16 @@ class ArbitratorActorImpl(
   private fun getMap(i: Int): Map<String, Any> {
     val now = Clock.System.now()
     val epochNanos = (now.epochSeconds * 1_000_000_000L) + now.nanosecondsOfSecond
+
     return mapOf("id" to i, "time" to epochNanos)
   }
 
   private fun measureEventTime(data: Map<String, Any>) {
     val now = Clock.System.now()
-    val epochNanos = (now.epochSeconds * 1_000_000_000L) + now.nanosecondsOfSecond
-    metricsRegistry
-      .timer(EVENT_TIMER_NAME)
-      .update((epochNanos - data["time"] as Long), TimeUnit.NANOSECONDS)
+    val nowNanos = (now.epochSeconds * 1_000_000_000L) + now.nanosecondsOfSecond
+
+    val deltaNanos = (nowNanos - data["time"] as Long).coerceAtLeast(0L)
+
+    metricsRegistry.timer(EVENT_TIMER_NAME)!!.update((deltaNanos), TimeUnit.NANOSECONDS)
   }
 }
