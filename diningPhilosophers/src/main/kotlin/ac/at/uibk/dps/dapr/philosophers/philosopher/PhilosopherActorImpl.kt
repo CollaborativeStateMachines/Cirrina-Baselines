@@ -56,6 +56,7 @@ class PhilosopherActorImpl(runtimeContext: ActorRuntimeContext<PhilosopherActorI
   private fun getMap(): Map<String, Any> {
     val now = Clock.System.now()
     val epochNanos = (now.epochSeconds * 1_000_000_000L) + now.nanosecondsOfSecond
+
     return mapOf("id" to id.toString(), "time" to epochNanos)
   }
 }
