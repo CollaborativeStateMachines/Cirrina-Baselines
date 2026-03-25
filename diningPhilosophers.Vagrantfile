@@ -12,6 +12,10 @@ Vagrant.configure("2") do |config|
   }
 
   nodes.each do |name, env_vars|
+    config.vm.provider "virtualbox" do |vb|
+      vb.customize ["guestproperty", "set", :id, "/VirtualBox/GuestAdd/VBoxService/--timesync-interval", 10000]
+      vb.customize ["guestproperty", "set", :id, "/VirtualBox/GuestAdd/VBoxService/--timesync-set-threshold", 0.2]
+    end
     config.vm.define name do |node|
       node.vm.box = "generic/ubuntu2004"
       ip_suffix = case name
@@ -23,8 +27,6 @@ Vagrant.configure("2") do |config|
       node.vm.synced_folder ".", "/app"
       node.vm.provision "shell", inline: <<-SHELL
         apt-get update -qq && apt-get install -y docker.io linuxptp
-
-        docker load -i /app/dapr-philosophers.tar.gz
 
         # Every node gets own state store
         docker rm -f redis || true
@@ -43,7 +45,7 @@ Vagrant.configure("2") do |config|
         docker run -d \
           --name #{name}-sidecar \
           --network host \
-          -v /app/redis/components-vagrant:/components \
+          -v /app/config/redis/components-vagrant:/components \
           daprio/daprd:edge \
           ./daprd \
           --app-id #{name}-sidecar \
@@ -63,21 +65,23 @@ Vagrant.configure("2") do |config|
             -e ROLE=arbitrator \
             -e NUMBER_OF_PHILOSOPHERS=6 \
             -e DAPR_HTTP_ENDPOINT=http://localhost:3500 \
+            -e METRICS_DIRECTORY=/app/metrics \
             -e DAPR_GRPC_ENDPOINT=http://localhost:50001 \
-            -v /app/output/#{name}/metrics:/app/metrics \
-            dapr-philosophers
+            -v /app/diningPhilosophers/run/#{name}/metrics:/app/metrics \
+            collaborativestatemachines/cirrina-baselines-diningPhilosophers:unstable
         else
           docker run -d \
             --name #{name} \
             --network host \
             -e PHILOSOPHER_ID=#{env_vars['PHILOSOPHER_ID']} \
             -e DAPR_HTTP_ENDPOINT=http://localhost:3500 \
+            -e METRICS_DIRECTORY=/app/metrics \
             -e DAPR_GRPC_ENDPOINT=http://localhost:50001 \
-            -v /app/output/#{name}/metrics:/app/metrics \
-            dapr-philosophers
+            -v /app/diningPhilosophers/run/#{name}/metrics:/app/metrics \
+            collaborativestatemachines/cirrina-baselines-diningPhilosophers:unstable
         fi
 
-        nohup bash -c 'while true; do docker stats --no-stream --format "$(date +%s),{{.Name}},{{.CPUPerc}},{{.MemUsage}}" >> /app/output/#{name}/metrics/docker_stats.csv; sleep 1; done' &
+        nohup bash -c 'while true; do docker stats --no-stream --format "$(date +%s),{{.Name}},{{.CPUPerc}},{{.MemUsage}}" >> /app/diningPhilosophers/run/metrics_#{name}/docker_stats.csv; sleep 1; done' &
       SHELL
     end
   end
