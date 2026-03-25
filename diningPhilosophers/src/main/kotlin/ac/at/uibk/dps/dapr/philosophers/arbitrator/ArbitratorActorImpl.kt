@@ -5,11 +5,11 @@ import ac.at.uibk.dps.dapr.philosophers.philosopher.PhilosopherPubSub
 import io.dapr.actors.ActorId
 import io.dapr.actors.runtime.AbstractActor
 import io.dapr.actors.runtime.ActorRuntimeContext
-import reactor.core.publisher.Mono
 import java.util.concurrent.TimeUnit
 import kotlin.time.Clock
 import kotlin.time.measureTime
 import kotlin.time.toJavaDuration
+import reactor.core.publisher.Mono
 
 class ArbitratorActorImpl(
   runtimeContext: ActorRuntimeContext<ArbitratorActorImpl>,
