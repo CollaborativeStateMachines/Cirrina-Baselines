@@ -18,18 +18,21 @@ Vagrant.configure("2") do |config|
       node.vm.synced_folder ".", "/app"
       node.vm.provision "shell", inline: <<-SHELL
         apt-get update -qq && apt-get install -y docker.io linuxptp
-        docker load -i /app/cigarette.tar.gz
+
         if [ "#{name}" = "redis_pub_sub" ]; then
             docker run -d --name redis --network host redis:8.2.4-alpine \
                 redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru --save ""
             exit 0
         fi
+
         # Every node gets own state store (default config is fine)
         docker rm -f redis || true
         docker run -d --name redis --network host redis:8.2.4-alpine
+
         # Every node gets its own placement
         docker rm -f placement || true
         docker run -d --name placement --network host daprio/placement:1.16.0 ./placement --port 50006
+
         # Sidecar
         docker rm -f #{name}-sidecar || true
         docker run -d \
@@ -43,7 +46,9 @@ Vagrant.configure("2") do |config|
           --resources-path /components \
           --placement-host-address localhost:50006 \
           --metrics-port 9091
+
         sleep 2
+
         # Application
         docker rm -f #{name} || true
         if [ "#{name}" = "arbiter" ]; then
@@ -55,7 +60,7 @@ Vagrant.configure("2") do |config|
             -e METRICS_DIRECTORY=/app/metrics \
             -e DAPR_GRPC_ENDPOINT=http://localhost:50001 \
             -v /app/cigaretteSmokers/runTest/metrics_#{name}:/app/metrics \
-            cigarette
+            collaborativestatemachines/cirrina-baselines-cigaretteSmokers:unstable
         else
           docker run -d \
             --name #{name} \
@@ -66,9 +71,11 @@ Vagrant.configure("2") do |config|
             -e METRICS_DIRECTORY=/app/metrics \
             -e DAPR_GRPC_ENDPOINT=http://localhost:50001 \
             -v /app/cigaretteSmokers/runTest/metrics_#{name}:/app/metrics \
-            cigarette
+            collaborativestatemachines/cirrina-baselines-cigaretteSmokers:unstable
         fi
+
         nohup bash -c 'while true; do docker stats --no-stream --format "$(date +%s),{{.Name}},{{.CPUPerc}},{{.MemUsage}}" >> /app/cigaretteSmokers/run/metrics_#{name}/docker_stats.csv; sleep 1; done' &
+
       SHELL
     end
   end

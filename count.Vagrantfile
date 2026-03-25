@@ -19,8 +19,6 @@ Vagrant.configure("2") do |config|
       node.vm.provision "shell", inline: <<-SHELL
         apt-get update -qq && apt-get install -y docker.io linuxptp
 
-        docker load -i /app/count.tar.gz
-
         if [ "#{name}" = "redis_pub_sub" ]; then
             docker run -d --name redis --network host redis:8.2.4-alpine \
                 redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru --save ""
