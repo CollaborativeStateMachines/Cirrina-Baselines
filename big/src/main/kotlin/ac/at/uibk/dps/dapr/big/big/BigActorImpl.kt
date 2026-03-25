@@ -3,11 +3,15 @@ package ac.at.uibk.dps.dapr.big.big
 // import io.dropwizard.metrics5.CsvReporter
 // import io.dropwizard.metrics5.MetricName
 // import io.dropwizard.metrics5.MetricRegistry
+import ac.at.uibk.dps.dapr.big.Big
 import io.dapr.actors.ActorId
 import io.dapr.actors.runtime.AbstractActor
 import io.dapr.actors.runtime.ActorRuntimeContext
 import io.dapr.client.DaprClientBuilder
+import java.util.concurrent.TimeUnit
+import kotlin.time.Clock
 import kotlin.time.measureTime
+import kotlin.time.toJavaDuration
 
 class BigActorImpl(runtimeContext: ActorRuntimeContext<BigActorImpl>, val actorId: ActorId) :
   AbstractActor(runtimeContext, actorId), BigActor {
@@ -17,25 +21,12 @@ class BigActorImpl(runtimeContext: ActorRuntimeContext<BigActorImpl>, val actorI
   var target: String = ""
   var count = 0
 
-  /*var metricRegistry: MetricRegistry =
-      MetricRegistry().apply {
-        CsvReporter.forRegistry(this)
-            .build(Paths.get("/metrics").toAbsolutePath().toFile())
-            .start(1L, TimeUnit.SECONDS)
-      }
+  var metricRegistry = Big.provideMetricRegistry()
 
-  var counter =
-      metricRegistry.counter(
-          MetricName.build("big.pings").tagged(mapOf("id" to actorId.toString()))
-      )
-  var eventTimer =
-      metricRegistry.timer(
-          MetricName.build("event.latency").tagged(mapOf("id" to actorId.toString()))
-      )
-  var pingTimer =
-      metricRegistry.timer(MetricName.build("ping.duration").tagged("id", actorId.toString()))
-  var pongTimer =
-      metricRegistry.timer(MetricName.build("pong.duration").tagged("id", actorId.toString()))*/
+  var counter = metricRegistry.counter("big.pings")
+  var eventTimer = metricRegistry.timer("event.latency")
+  var pingTimer = metricRegistry.timer("ping.duration")
+  var pongTimer = metricRegistry.timer("pong.duration")
 
   override fun register() {
     client.publishEvent("pubsub", "register", actorId.toString()).subscribe()
@@ -49,7 +40,12 @@ class BigActorImpl(runtimeContext: ActorRuntimeContext<BigActorImpl>, val actorI
   override fun receivePong(data: Map<String, Any>) {
     val delta = measureTime {
       val time = data["time"] as Long
-      // eventTimer.update((System.nanoTime() - time) / 1_000, TimeUnit.MICROSECONDS)
+
+      val now = Clock.System.now()
+      val nowNanos = (now.epochSeconds * 1_000_000_000L) + now.nanosecondsOfSecond
+      val deltaNanos = (nowNanos - time).coerceAtLeast(0L)
+
+      eventTimer.update(deltaNanos, TimeUnit.NANOSECONDS)
 
       val sender = data["sender"] as String
 
@@ -57,16 +53,21 @@ class BigActorImpl(runtimeContext: ActorRuntimeContext<BigActorImpl>, val actorI
         sendPing()
         ++count
 
-        // counter.inc()
+        counter.inc()
       }
     }
-    // pingTimer.update(delta.toJavaDuration())
+    pingTimer.update(delta.toJavaDuration())
   }
 
   override fun sendPong(data: Map<String, Any>) {
     val delta = measureTime {
       val time = data["time"] as Long
-      // eventTimer.update((System.nanoTime() - time) / 1_000, TimeUnit.MICROSECONDS)
+
+      val now = Clock.System.now()
+      val nowNanos = (now.epochSeconds * 1_000_000_000L) + now.nanosecondsOfSecond
+      val deltaNanos = (nowNanos - time).coerceAtLeast(0L)
+
+      eventTimer.update(deltaNanos, TimeUnit.NANOSECONDS)
 
       val sender = data["sender"] as String
 
@@ -74,20 +75,23 @@ class BigActorImpl(runtimeContext: ActorRuntimeContext<BigActorImpl>, val actorI
         .publishEvent(
           "pubsub",
           "pong",
-          mapOf("sender" to actorId.toString(), "receiver" to sender, "time" to System.nanoTime()),
+          mapOf("sender" to actorId.toString(), "receiver" to sender, "time" to nowNanos),
         )
         .subscribe()
     }
-    // pongTimer.update(delta.toJavaDuration())
+    pongTimer.update(delta.toJavaDuration())
   }
 
   private fun sendPing() {
     target = neighbors.random()
+    val now = Clock.System.now()
+    val nowNanos = (now.epochSeconds * 1_000_000_000L) + now.nanosecondsOfSecond
+
     client
       .publishEvent(
         "pubsub",
         "ping",
-        mapOf("sender" to actorId.toString(), "receiver" to target, "time" to System.nanoTime()),
+        mapOf("sender" to actorId.toString(), "receiver" to target, "time" to nowNanos),
       )
       .subscribe()
   }
