@@ -16,7 +16,7 @@ class SinkActorImpl(runtimeContext: ActorRuntimeContext<SinkActorImpl>, actorId:
 
   override fun register() {
     ++registered
-    if (registered == 6) {
+    if (registered == 12) {
       client.publishEvent("pubsub", "initial", 0L).subscribe()
     }
   }
