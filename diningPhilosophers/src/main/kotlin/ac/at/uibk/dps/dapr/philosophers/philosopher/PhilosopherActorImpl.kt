@@ -15,7 +15,7 @@ import kotlin.time.toJavaDuration
 import reactor.core.publisher.Mono
 
 class PhilosopherActorImpl(runtimeContext: ActorRuntimeContext<PhilosopherActorImpl>, id: ActorId) :
-    AbstractActor(runtimeContext, id), PhilosopherActor {
+  AbstractActor(runtimeContext, id), PhilosopherActor {
 
   companion object {
     const val COUNTER_NAME = "philosopher.meals"
@@ -26,11 +26,11 @@ class PhilosopherActorImpl(runtimeContext: ActorRuntimeContext<PhilosopherActorI
   val seedGenerator = SecureRandom()
 
   private val threadRng =
-      object : ThreadLocal<Random>() {
-        override fun initialValue(): Random {
-          return Random(seedGenerator.nextLong())
-        }
+    object : ThreadLocal<Random>() {
+      override fun initialValue(): Random {
+        return Random(seedGenerator.nextLong())
       }
+    }
 
   var completedRounds: Int = 0
 
@@ -53,9 +53,9 @@ class PhilosopherActorImpl(runtimeContext: ActorRuntimeContext<PhilosopherActorI
       metricsRegistry.counter(COUNTER_NAME).inc(1L)
 
       val delay =
-          Mono.delay(Duration.ofMillis(randomAround(10, 2).toLong())).flatMap {
-            ArbitratorPubSub.doneEating(DiningPhilosophers.daprClient, getMap())
-          }
+        Mono.delay(Duration.ofMillis(randomAround(10, 2).toLong())).flatMap {
+          ArbitratorPubSub.doneEating(DiningPhilosophers.daprClient, getMap())
+        }
       delay.then(ArbitratorPubSub.requestForks(DiningPhilosophers.daprClient, getMap())).subscribe()
     }
 
