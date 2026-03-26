@@ -4,6 +4,7 @@ import io.dapr.Topic
 import io.dapr.actors.ActorId
 import io.dapr.actors.client.ActorClient
 import io.dapr.actors.client.ActorProxyBuilder
+import io.dapr.client.domain.CloudEvent
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -18,7 +19,7 @@ class CounterSubscriber {
 
   @Topic(name = "increment", pubsubName = "pubsub")
   @PostMapping("/increment")
-  fun handleIncrement(@RequestBody body: Map<String, Any>) {
-    counterProxy.increment(body["data"] as Long)
+  fun incrementSubscriber(@RequestBody event: CloudEvent<Long>) {
+    counterProxy.increment(event.data)
   }
 }
