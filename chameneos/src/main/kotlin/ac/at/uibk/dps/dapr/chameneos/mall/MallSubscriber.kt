@@ -4,6 +4,7 @@ import io.dapr.Topic
 import io.dapr.actors.ActorId
 import io.dapr.actors.client.ActorClient
 import io.dapr.actors.client.ActorProxyBuilder
+import io.dapr.client.domain.CloudEvent
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -12,15 +13,12 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @ConditionalOnProperty("app.role", havingValue = "mall")
 class MallSubscriber {
-  private val actorClient = ActorClient()
   private val mallProxy =
-    ActorProxyBuilder(MallActor::class.java, actorClient).build(ActorId("mall-1"))
+    ActorProxyBuilder(MallActor::class.java, ActorClient()).build(ActorId("mall-1"))
 
-  @Topic(name = "request", pubsubName = "pubsub")
-  @PostMapping("/request")
-  fun handleRequest(@RequestBody body: Map<String, Any>) {
-    val data = body["data"] as? Map<String, Any> ?: body
-
-    mallProxy.requesting(data)
+  @Topic(name = "requesting", pubsubName = "pubsub")
+  @PostMapping("/requesting")
+  fun requestSubscriber(@RequestBody event: CloudEvent<Map<String, Any>>) {
+    mallProxy.requesting(event.data)
   }
 }

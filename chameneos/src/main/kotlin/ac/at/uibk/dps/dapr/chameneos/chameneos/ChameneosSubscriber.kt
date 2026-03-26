@@ -4,6 +4,7 @@ import io.dapr.Topic
 import io.dapr.actors.ActorId
 import io.dapr.actors.client.ActorClient
 import io.dapr.actors.client.ActorProxyBuilder
+import io.dapr.client.domain.CloudEvent
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -14,29 +15,22 @@ import org.springframework.web.bind.annotation.RestController
 class ChameneosSubscriber {
 
   private val id = System.getenv("CHAMENEOS_ID")
-  private val actorClient = ActorClient()
   private val chameneosProxy =
-    ActorProxyBuilder(ChameneosActor::class.java, actorClient).build(ActorId("$id"))
+    ActorProxyBuilder(ChameneosActor::class.java, ActorClient()).build(ActorId("$id"))
 
-  @Topic(name = "meet", pubsubName = "pubsub")
-  @PostMapping("/meet")
-  fun handleMeet(@RequestBody body: Map<String, Any>) {
-    val data = body["data"] as? Map<String, Any> ?: body
-    val initiator = data["initiator"] as? String ?: return
-
-    if (initiator == id) {
-      chameneosProxy.meet(data)
+  @Topic(name = "matchMade", pubsubName = "pubsub")
+  @PostMapping("/matchMade")
+  fun matchMadeSubscriber(@RequestBody event: CloudEvent<Map<String, Any>>) {
+    if (event.data["target"] == id) {
+      chameneosProxy.matchMade(event.data)
     }
   }
 
   @Topic(name = "change", pubsubName = "pubsub")
   @PostMapping("/change")
-  fun handleChange(@RequestBody body: Map<String, Any>) {
-    val data = body["data"] as? Map<String, Any> ?: body
-    val partner = data["partner"] as? String ?: return
-
-    if (partner == id) {
-      chameneosProxy.change(data)
+  fun changeSubscriber(@RequestBody event: CloudEvent<Map<String, Any>>) {
+    if (event.data["partner"] == id) {
+      chameneosProxy.change(event.data)
     }
   }
 }

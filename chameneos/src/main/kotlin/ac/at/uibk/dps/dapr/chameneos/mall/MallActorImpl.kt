@@ -7,63 +7,49 @@ import io.dapr.actors.runtime.ActorRuntimeContext
 import io.dapr.client.DaprClientBuilder
 import java.util.concurrent.TimeUnit
 import kotlin.time.Clock
-import kotlin.time.measureTime
-import kotlin.time.toJavaDuration
 
 class MallActorImpl(runtimeContext: ActorRuntimeContext<MallActorImpl>, actorId: ActorId) :
   AbstractActor(runtimeContext, actorId), MallActor {
 
   val client = DaprClientBuilder().build()
 
-  var count = 0
-  var startTime = System.nanoTime()
-  var waiting: MutableList<String> = mutableListOf()
-
   var metricRegistry = Chameneos.provideMetricRegistry()
-  var counter = metricRegistry.counter("mall.meetings")
-  var eventTimer = metricRegistry.timer("event.latency")
-  var requestingTimer = metricRegistry.timer("request.duration")
+
+  var count = 0
+  var waiting: ArrayList<String> = arrayListOf()
 
   override fun requesting(data: Map<String, Any>) {
-    val delta = measureTime {
-      val time = data["time"] as Long
-      val requestor = data["requestor"] as String
-      val requestorColor = data["color"] as Int
+    var now = Clock.System.now()
+    var nowNanos = (now.epochSeconds * 1_000_000_000L) + now.nanosecondsOfSecond
+    val deltaNanos = (nowNanos - data["time"] as Long).coerceAtLeast(0L)
 
-      var now = Clock.System.now()
-      var nowNanos = (now.epochSeconds * 1_000_000_000L) + now.nanosecondsOfSecond
+    metricRegistry.timer("event.latency").update(deltaNanos, TimeUnit.NANOSECONDS)
 
-      val deltaNanos = (nowNanos - time).coerceAtLeast(0L)
+    val id = data["id"] as String
 
-      eventTimer.update(deltaNanos, TimeUnit.NANOSECONDS)
+    if (waiting.isEmpty()) {
+      waiting.add(id)
+    } else {
+      ++count
+      metricRegistry.counter("mall.meetings").inc()
 
-      if (count == 0) startTime = System.nanoTime()
+      now = Clock.System.now()
+      nowNanos = (now.epochSeconds * 1_000_000_000L) + now.nanosecondsOfSecond
 
-      if (waiting.isEmpty()) {
-        waiting.add(requestor)
-      } else {
-        count++
-        counter.inc()
+      client
+        .publishEvent(
+          "pubsub",
+          "matchMade",
+          mapOf<String, Any>(
+            "target" to waiting[0],
+            "partner" to id,
+            "color" to data["color"] as Int,
+            "time" to nowNanos,
+          ),
+        )
+        .subscribe()
 
-        val waitingId = waiting.removeAt(0)
-
-        now = Clock.System.now()
-        nowNanos = (now.epochSeconds * 1_000_000_000L) + now.nanosecondsOfSecond
-
-        client
-          .publishEvent(
-            "pubsub",
-            "meet",
-            mapOf<String, Any>(
-              "initiator" to waitingId,
-              "partner" to requestor,
-              "color" to requestorColor,
-              "time" to nowNanos,
-            ),
-          )
-          .subscribe()
-      }
+      waiting.removeAt(0)
     }
-    requestingTimer.update(delta.toJavaDuration())
   }
 }

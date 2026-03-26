@@ -8,8 +8,6 @@ import io.dapr.client.DaprClientBuilder
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
 import kotlin.time.Clock
-import kotlin.time.measureTime
-import kotlin.time.toJavaDuration
 
 class ChameneosActorImpl(
   runtimeContext: ActorRuntimeContext<ChameneosActorImpl>,
@@ -17,79 +15,58 @@ class ChameneosActorImpl(
 ) : AbstractActor(runtimeContext, actorId), ChameneosActor {
   val client = DaprClientBuilder().build()
 
+  var metricRegistry = Chameneos.provideMetricRegistry()
+  var eventTimer = metricRegistry.timer("event.latency")
+
   var color = Random.nextInt(1, 4)
 
-  var metricRegistry = Chameneos.provideMetricRegistry()
-
-  var eventTimer = metricRegistry.timer("event.latency")
-  var requestTimer = metricRegistry.timer("request.duration")
-  var meetTimer = metricRegistry.timer("meet.duration")
-  var changeTimer = metricRegistry.timer("change.duration")
-
   override fun request() {
-    val delta = measureTime {
-      val now = Clock.System.now()
-      val epochNanos = (now.epochSeconds * 1_000_000_000L) + now.nanosecondsOfSecond
+    val now = Clock.System.now()
+    val epochNanos = (now.epochSeconds * 1_000_000_000L) + now.nanosecondsOfSecond
 
-      client
-        .publishEvent(
-          "pubsub",
-          "request",
-          mapOf<String, Any>(
-            "requestor" to actorId.toString(),
-            "color" to color,
-            "time" to epochNanos,
-          ),
-        )
-        .subscribe()
-    }
-    requestTimer.update(delta.toJavaDuration())
+    client
+      .publishEvent(
+        "pubsub",
+        "requesting",
+        mapOf<String, Any>("id" to actorId.toString(), "color" to color, "time" to epochNanos),
+      )
+      .subscribe()
   }
 
-  override fun meet(data: Map<String, Any>) {
-    val delta = measureTime {
-      val time = data["time"] as Long
-      val partnerColor = data["color"] as Int
-      val partner = data["partner"] as String
+  override fun matchMade(data: Map<String, Any>) {
+    val now = Clock.System.now()
+    val nowNanos = (now.epochSeconds * 1_000_000_000L) + now.nanosecondsOfSecond
+    val deltaNanos = (nowNanos - data["time"] as Long).coerceAtLeast(0L)
 
-      var now = Clock.System.now()
-      var nowNanos = (now.epochSeconds * 1_000_000_000L) + now.nanosecondsOfSecond
+    eventTimer.update(deltaNanos, TimeUnit.NANOSECONDS)
 
-      val deltaNanos = (nowNanos - time).coerceAtLeast(0L)
+    val partnerColor = data["color"] as Int
 
-      eventTimer.update(deltaNanos, TimeUnit.NANOSECONDS)
+    color = if (color == partnerColor) color else (color xor partnerColor)
 
-      color = if (color == partnerColor) color else (color xor partnerColor)
+    client
+      .publishEvent(
+        "pubsub",
+        "change",
+        mapOf<String, Any>(
+          "partner" to data["partner"].toString(),
+          "color" to color,
+          "time" to nowNanos,
+        ),
+      )
+      .subscribe()
 
-      now = Clock.System.now()
-      nowNanos = (now.epochSeconds * 1_000_000_000L) + now.nanosecondsOfSecond
-      client
-        .publishEvent(
-          "pubsub",
-          "change",
-          mapOf<String, Any>("partner" to partner, "color" to color, "time" to nowNanos),
-        )
-        .subscribe()
-    }
-    meetTimer.update(delta.toJavaDuration())
     request()
   }
 
   override fun change(data: Map<String, Any>) {
-    val delta = measureTime {
-      val time = data["time"] as Long
+    val now = Clock.System.now()
+    val nowNanos = (now.epochSeconds * 1_000_000_000L) + now.nanosecondsOfSecond
+    val deltaNanos = (nowNanos - data["time"] as Long).coerceAtLeast(0L)
 
-      val now = Clock.System.now()
-      val nowNanos = (now.epochSeconds * 1_000_000_000L) + now.nanosecondsOfSecond
+    eventTimer.update(deltaNanos, TimeUnit.NANOSECONDS)
 
-      val deltaNanos = (nowNanos - time).coerceAtLeast(0L)
-
-      eventTimer.update(deltaNanos, TimeUnit.NANOSECONDS)
-
-      color = data["color"] as Int
-    }
-    changeTimer.update(delta.toJavaDuration())
-
+    color = data["color"] as Int
     request()
   }
 }
