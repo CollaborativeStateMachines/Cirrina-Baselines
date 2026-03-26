@@ -6,10 +6,10 @@ import io.dapr.actors.runtime.AbstractActor
 import io.dapr.actors.runtime.ActorRuntimeContext
 import io.dapr.client.DaprClient
 import io.dapr.client.DaprClientBuilder
+import java.security.SecureRandom
 import java.util.concurrent.TimeUnit
+import kotlin.random.Random
 import kotlin.time.Clock
-import kotlin.time.measureTime
-import kotlin.time.toJavaDuration
 
 class SmokerActorImpl(runtimeContext: ActorRuntimeContext<SmokerActorImpl>, val actorId: ActorId) :
   AbstractActor(runtimeContext, actorId), SmokerActor {
@@ -17,30 +17,35 @@ class SmokerActorImpl(runtimeContext: ActorRuntimeContext<SmokerActorImpl>, val 
   val client: DaprClient = DaprClientBuilder().build()
 
   var metricRegistry = CigaretteSmokers.provideMetricRegistry()
-  var eventTimer = metricRegistry.timer("event.latency")
-  var smokeTimer = metricRegistry.timer("smoke.duration")
 
-  override fun smoke(data: Map<String, Any>) {
-    val delta = measureTime {
-      val ingredients = data["ingredients"] as List<String>
-      val time = data["time"] as Long
-
-      if (!ingredients.contains(actorId.toString())) {
-        var now = Clock.System.now()
-        val nowNanos = (now.epochSeconds * 1_000_000_000L) + now.nanosecondsOfSecond
-
-        val deltaNanos = (nowNanos - time).coerceAtLeast(0L)
-
-        eventTimer.update(deltaNanos, TimeUnit.NANOSECONDS)
-
-        Thread.sleep(10)
-
-        now = Clock.System.now()
-        val epochNanos = (now.epochSeconds * 1_000_000_000L) + now.nanosecondsOfSecond
-
-        client.publishEvent("pubsub", "done", epochNanos).subscribe()
+  private val seedGenerator = SecureRandom()
+  private val threadRng =
+    object : ThreadLocal<Random>() {
+      override fun initialValue(): Random {
+        return Random(seedGenerator.nextLong())
       }
     }
-    smokeTimer.update(delta.toJavaDuration())
+
+  override fun smoking(data: Map<String, Any>) {
+    var now = Clock.System.now()
+    val nowNanos = (now.epochSeconds * 1_000_000_000L) + now.nanosecondsOfSecond
+    val deltaNanos = (nowNanos - data["time"] as Long).coerceAtLeast(0L)
+
+    metricRegistry.timer("event.latency").update(deltaNanos, TimeUnit.NANOSECONDS)
+
+    val ingredients = data["ingredients"] as List<*>
+
+    if (!ingredients.contains(actorId)) {
+      Thread.sleep(randomAround(10, 2).toLong())
+
+      now = Clock.System.now()
+      val epochNanos = (now.epochSeconds * 1_000_000_000L) + now.nanosecondsOfSecond
+
+      client.publishEvent("pubsub", "finish", epochNanos).subscribe()
+    }
+  }
+
+  fun randomAround(base: Int, delta: Int): Int {
+    return (base - delta..base + delta).random(threadRng.get())
   }
 }

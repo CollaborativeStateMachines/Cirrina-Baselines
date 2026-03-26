@@ -16,9 +16,9 @@ class ArbiterSubscriber {
   private val arbiterProxy =
     ActorProxyBuilder(ArbiterActor::class.java, ActorClient()).build(ActorId("arbiter-1"))
 
-  @Topic(name = "done", pubsubName = "pubsub")
-  @PostMapping("/done")
-  fun handleDone(@RequestBody body: Map<String, Any>) {
+  @Topic(name = "finish", pubsubName = "pubsub")
+  @PostMapping("/finish")
+  fun finishSubscriber(@RequestBody body: Map<String, Any>) {
     arbiterProxy.provide(body["data"] as Long)
   }
 }
