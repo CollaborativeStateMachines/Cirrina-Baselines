@@ -30,8 +30,6 @@ Vagrant.configure("2") do |config|
       node.vm.provision "shell", inline: <<-SHELL
         apt-get update -qq && apt-get install -y docker.io linuxptp
 
-        docker load -i /app/big.tar.gz
-
         if [ "#{name}" = "redis_pub_sub" ]; then
             docker run -d --name redis --network host redis:8.2.4-alpine \
                 redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru --save ""
@@ -72,7 +70,7 @@ Vagrant.configure("2") do |config|
             -e METRICS_DIRECTORY=/app/metrics \
             -e DAPR_GRPC_ENDPOINT=http://localhost:50001 \
             -v /app/big/runTest/metrics_#{name}:/app/metrics \
-            big
+            collaborativestatemachines/cirrina-baselines-big:unstable
         else
           docker run -d \
             --name #{name} \
@@ -83,7 +81,7 @@ Vagrant.configure("2") do |config|
             -e METRICS_DIRECTORY=/app/metrics \
             -e DAPR_GRPC_ENDPOINT=http://localhost:50001 \
             -v /app/big/runTest/metrics_#{name}:/app/metrics \
-            big
+            collaborativestatemachines/cirrina-baselines-big:unstable
         fi
 
         nohup bash -c 'while true; do docker stats --no-stream --format "$(date +%s),{{.Name}},{{.CPUPerc}},{{.MemUsage}}" >> /app/big/run/metrics_#{name}/docker_stats.csv; sleep 1; done' &
