@@ -35,7 +35,7 @@ class SmokerActorImpl(runtimeContext: ActorRuntimeContext<SmokerActorImpl>, val 
 
     val ingredients = data["ingredients"] as List<*>
 
-    if (!ingredients.contains(actorId)) {
+    if (!ingredients.contains(actorId.toString().toInt())) {
       Thread.sleep(randomAround(10, 2).toLong())
 
       now = Clock.System.now()

@@ -4,6 +4,7 @@ import io.dapr.Topic
 import io.dapr.actors.ActorId
 import io.dapr.actors.client.ActorClient
 import io.dapr.actors.client.ActorProxyBuilder
+import io.dapr.client.domain.CloudEvent
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -18,7 +19,7 @@ class SmokerSubscriber {
 
   @Topic(name = "provided", pubsubName = "pubsub")
   @PostMapping("/provided")
-  fun provideSubscriber(@RequestBody body: Map<String, Any>) {
-    smokerProxy.smoking(body["data"] as Map<String, Any>)
+  fun provideSubscriber(@RequestBody event: CloudEvent<Map<String, Any>>) {
+    smokerProxy.smoking(event.data)
   }
 }

@@ -4,6 +4,7 @@ import io.dapr.Topic
 import io.dapr.actors.ActorId
 import io.dapr.actors.client.ActorClient
 import io.dapr.actors.client.ActorProxyBuilder
+import io.dapr.client.domain.CloudEvent
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -18,7 +19,7 @@ class ArbiterSubscriber {
 
   @Topic(name = "finish", pubsubName = "pubsub")
   @PostMapping("/finish")
-  fun finishSubscriber(@RequestBody body: Map<String, Any>) {
-    arbiterProxy.provide(body["data"] as Long)
+  fun finishSubscriber(@RequestBody event: CloudEvent<Long>) {
+    arbiterProxy.provide(event.data)
   }
 }
