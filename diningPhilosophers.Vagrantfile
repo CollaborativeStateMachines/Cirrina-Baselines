@@ -12,10 +12,6 @@ Vagrant.configure("2") do |config|
   }
 
   nodes.each do |name, env_vars|
-    config.vm.provider "virtualbox" do |vb|
-      vb.customize ["guestproperty", "set", :id, "/VirtualBox/GuestAdd/VBoxService/--timesync-interval", 10000]
-      vb.customize ["guestproperty", "set", :id, "/VirtualBox/GuestAdd/VBoxService/--timesync-set-threshold", 0.2]
-    end
     config.vm.define name do |node|
       node.vm.box = "generic/ubuntu2004"
       ip_suffix = case name
