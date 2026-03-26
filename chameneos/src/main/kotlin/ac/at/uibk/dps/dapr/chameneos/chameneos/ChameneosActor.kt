@@ -6,7 +6,7 @@ import io.dapr.actors.ActorType
 interface ChameneosActor {
   fun request()
 
-  fun meet(data: Map<String, Any>)
+  fun matchMade(data: Map<String, Any>)
 
   fun change(data: Map<String, Any>)
 }
