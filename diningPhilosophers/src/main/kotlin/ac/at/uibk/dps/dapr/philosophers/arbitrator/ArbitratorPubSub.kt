@@ -4,45 +4,27 @@ import io.dapr.Topic
 import io.dapr.actors.ActorId
 import io.dapr.actors.client.ActorClient
 import io.dapr.actors.client.ActorProxyBuilder
-import io.dapr.client.DaprClient
 import io.dapr.client.domain.CloudEvent
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
-import reactor.core.publisher.Mono
 
 @RestController
 @ConditionalOnProperty("app.role", havingValue = "arbitrator")
 class ArbitratorPubSub {
-
-  companion object {
-    const val REQUEST_FORKS_TOPIC_NAME = "requestForks"
-    const val DONE_EATING_TOPIC_NAME = "doneEating"
-    const val PUB_SUB_NAME = "pubsub"
-    const val ARBITRATOR_NAME = "arbitrator"
-
-    fun requestForks(client: DaprClient, data: Map<String, Any>): Mono<Void> {
-      return client.publishEvent(PUB_SUB_NAME, REQUEST_FORKS_TOPIC_NAME, data)
-    }
-
-    fun doneEating(client: DaprClient, data: Map<String, Any>): Mono<Void> {
-      return client.publishEvent(PUB_SUB_NAME, DONE_EATING_TOPIC_NAME, data)
-    }
-  }
-
   val arbitratorProxy: ArbitratorActor =
-    ActorProxyBuilder(ArbitratorActor::class.java, ActorClient()).build(ActorId(ARBITRATOR_NAME))
+    ActorProxyBuilder(ArbitratorActor::class.java, ActorClient()).build(ActorId("arbitrator"))
 
-  @Topic(name = REQUEST_FORKS_TOPIC_NAME, pubsubName = PUB_SUB_NAME)
-  @PostMapping("/requestForks")
-  fun requestForksSubscriber(@RequestBody(required = true) event: CloudEvent<Map<String, Any>>) {
-    arbitratorProxy.requestForks(event.data).subscribe()
+  @Topic(name = "hungry", pubsubName = "pubsub")
+  @PostMapping("/hungry")
+  fun hungrySubscriber(@RequestBody(required = true) event: CloudEvent<Map<String, Any>>) {
+    arbitratorProxy.hungry(event.data)
   }
 
-  @Topic(name = DONE_EATING_TOPIC_NAME, pubsubName = PUB_SUB_NAME)
-  @PostMapping("/doneEating")
-  fun doneEatingSubscriber(@RequestBody(required = true) event: CloudEvent<Map<String, Any>>) {
-    arbitratorProxy.doneEating(event.data).subscribe()
+  @Topic(name = "release", pubsubName = "pubsub")
+  @PostMapping("/release")
+  fun releaseSubscriber(@RequestBody(required = true) event: CloudEvent<Map<String, Any>>) {
+    arbitratorProxy.release(event.data)
   }
 }

@@ -1,30 +1,21 @@
 package ac.at.uibk.dps.dapr.philosophers.philosopher
 
 import ac.at.uibk.dps.dapr.philosophers.DiningPhilosophers
-import ac.at.uibk.dps.dapr.philosophers.arbitrator.ArbitratorPubSub
 import io.dapr.actors.ActorId
 import io.dapr.actors.runtime.AbstractActor
 import io.dapr.actors.runtime.ActorRuntimeContext
+import io.dapr.client.DaprClient
+import io.dapr.client.DaprClientBuilder
 import java.security.SecureRandom
-import java.time.Duration
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
 import kotlin.time.Clock
-import kotlin.time.measureTime
-import kotlin.time.toJavaDuration
-import reactor.core.publisher.Mono
 
 class PhilosopherActorImpl(runtimeContext: ActorRuntimeContext<PhilosopherActorImpl>, id: ActorId) :
   AbstractActor(runtimeContext, id), PhilosopherActor {
+  private val client: DaprClient = DaprClientBuilder().build()
 
-  companion object {
-    const val COUNTER_NAME = "philosopher.meals"
-    const val EVENT_TIMER_NAME = "event.latency"
-    const val EAT_DURATION_NAME = "eat.duration"
-  }
-
-  val seedGenerator = SecureRandom()
-
+  private val seedGenerator = SecureRandom()
   private val threadRng =
     object : ThreadLocal<Random>() {
       override fun initialValue(): Random {
@@ -32,35 +23,28 @@ class PhilosopherActorImpl(runtimeContext: ActorRuntimeContext<PhilosopherActorI
       }
     }
 
-  var completedRounds: Int = 0
+  private val metricsRegistry = DiningPhilosophers.provideMetricRegistry()
 
-  val metricsRegistry = DiningPhilosophers.provideMetricRegistry()
+  private var meals: Int = 0
 
-  override fun start(): Mono<Void> {
-    return ArbitratorPubSub.requestForks(DiningPhilosophers.daprClient, getMap())
+  override fun starting() {
+    client.publishEvent("pubsub", "hungry", getMap()).subscribe()
   }
 
-  override fun eat(data: Map<String, Any>): Mono<Void> {
+  override fun eating(data: Map<String, Any>) {
     val now = Clock.System.now()
     val nowNanos = (now.epochSeconds * 1_000_000_000L) + now.nanosecondsOfSecond
-
     val deltaNanos = (nowNanos - data["time"] as Long).coerceAtLeast(0L)
 
-    metricsRegistry.timer(EVENT_TIMER_NAME)!!.update((deltaNanos), TimeUnit.NANOSECONDS)
+    metricsRegistry.timer("event.latency")!!.update((deltaNanos), TimeUnit.NANOSECONDS)
 
-    val delta = measureTime {
-      completedRounds++
-      metricsRegistry.counter(COUNTER_NAME).inc(1L)
+    Thread.sleep(randomAround(10, 2).toLong())
 
-      val delay =
-        Mono.delay(Duration.ofMillis(randomAround(10, 2).toLong())).flatMap {
-          ArbitratorPubSub.doneEating(DiningPhilosophers.daprClient, getMap())
-        }
-      delay.then(ArbitratorPubSub.requestForks(DiningPhilosophers.daprClient, getMap())).subscribe()
-    }
+    ++meals
+    metricsRegistry.counter("philosopher.meals").inc(1L)
 
-    metricsRegistry.timer(EAT_DURATION_NAME).update(delta.toJavaDuration())
-    return Mono.empty()
+    client.publishEvent("pubsub", "release", getMap()).subscribe()
+    client.publishEvent("pubsub", "hungry", getMap()).subscribe()
   }
 
   private fun getMap(): Map<String, Any> {
@@ -71,7 +55,6 @@ class PhilosopherActorImpl(runtimeContext: ActorRuntimeContext<PhilosopherActorI
   }
 
   fun randomAround(base: Int, delta: Int): Int {
-    val rng = threadRng.get()
-    return (base - delta..base + delta).random(rng)
+    return (base - delta..base + delta).random(threadRng.get())
   }
 }
