@@ -4,6 +4,7 @@ import io.dapr.Topic
 import io.dapr.actors.ActorId
 import io.dapr.actors.client.ActorClient
 import io.dapr.actors.client.ActorProxyBuilder
+import io.dapr.client.domain.CloudEvent
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -18,17 +19,13 @@ class SinkSubscriber {
 
   @Topic(name = "register", pubsubName = "pubsub")
   @PostMapping("/register")
-  fun handleRegister(@RequestBody body: Map<String, Any>) {
-    val actor = body["data"]
-
-    sinkProxy.register(actor as String)
+  fun registerSubscriber() {
+    sinkProxy.register()
   }
 
-  @Topic(name = "done", pubsubName = "pubsub")
-  @PostMapping("/done")
-  fun handleDone(@RequestBody body: Map<String, Any>) {
-    val data = body["data"] as Map<String, Any>
-
-    sinkProxy.receiveDone(data)
+  @Topic(name = "report", pubsubName = "pubsub")
+  @PostMapping("/report")
+  fun reportSubscriber(@RequestBody event: CloudEvent<Map<String, Any>>) {
+    sinkProxy.report(event.data)
   }
 }

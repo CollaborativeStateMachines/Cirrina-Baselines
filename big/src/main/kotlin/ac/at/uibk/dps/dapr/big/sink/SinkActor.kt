@@ -4,9 +4,7 @@ import io.dapr.actors.ActorType
 
 @ActorType(name = "SinkActor")
 interface SinkActor {
-  fun register(actor: String)
+  fun report(data: Map<String, Any>)
 
-  fun sendNeighbors()
-
-  fun receiveDone(data: Map<String, Any>)
+  fun register()
 }

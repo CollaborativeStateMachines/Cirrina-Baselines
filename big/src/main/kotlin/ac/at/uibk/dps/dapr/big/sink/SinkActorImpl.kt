@@ -1,5 +1,6 @@
 package ac.at.uibk.dps.dapr.big.sink
 
+import ac.at.uibk.dps.dapr.big.Big
 import io.dapr.actors.ActorId
 import io.dapr.actors.runtime.AbstractActor
 import io.dapr.actors.runtime.ActorRuntimeContext
@@ -7,27 +8,21 @@ import io.dapr.client.DaprClientBuilder
 
 class SinkActorImpl(runtimeContext: ActorRuntimeContext<SinkActorImpl>, actorId: ActorId) :
   AbstractActor(runtimeContext, actorId), SinkActor {
-
   val client = DaprClientBuilder().build()
-  var bigs = mutableListOf<String>()
+  var metricRegistry = Big.provideMetricRegistry()
 
-  override fun register(actor: String) {
-    if (!bigs.contains(actor)) {
-      bigs.add(actor)
-    }
-    if (bigs.size == 12) {
-      sendNeighbors()
+  private var total = 0
+  private var registered = 0
+
+  override fun register() {
+    ++registered
+    if (registered == 6) {
+      client.publishEvent("pubsub", "initial", 0L).subscribe()
     }
   }
 
-  override fun sendNeighbors() {
-    client.publishEvent("pubsub", "neighbors", bigs.toList()).subscribe()
-    bigs.clear()
-  }
-
-  override fun receiveDone(data: Map<String, Any>) {
-    if (!bigs.contains(data["sender"] as String)) {
-      bigs.add(data["sender"] as String)
-    }
+  override fun report(data: Map<String, Any>) {
+    total += 1000
+    metricRegistry.counter("sink.total").inc(1000L)
   }
 }

@@ -6,9 +6,9 @@ import io.dapr.actors.ActorType
 interface BigActor {
   fun register()
 
-  fun assignNeighbors(neighbors: List<String>)
+  fun initial()
 
-  fun receivePong(data: Map<String, Any>)
+  fun onPong(data: Map<String, Any>)
 
-  fun sendPong(data: Map<String, Any>)
+  fun onPing(data: Map<String, Any>)
 }
