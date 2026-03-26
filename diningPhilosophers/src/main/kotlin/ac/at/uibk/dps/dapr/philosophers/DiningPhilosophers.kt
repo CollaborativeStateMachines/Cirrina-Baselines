@@ -32,31 +32,31 @@ class DiningPhilosophers {
     val metricsPeriod = System.getenv("METRICS_PERIOD")?.toLong() ?: 1L
 
     fun provideMetricRegistry(): MetricRegistry =
-        MetricRegistry().apply {
-          val path = Paths.get(metricsDirectory).toAbsolutePath()
-          Files.createDirectories(path)
+      MetricRegistry().apply {
+        val path = Paths.get(metricsDirectory).toAbsolutePath()
+        Files.createDirectories(path)
 
-          CsvReporter.forRegistry(this).build(path.toFile()).start(metricsPeriod, TimeUnit.SECONDS)
+        CsvReporter.forRegistry(this).build(path.toFile()).start(metricsPeriod, TimeUnit.SECONDS)
 
-          object :
-                  DropwizardMeterRegistry(
-                      object : DropwizardConfig {
-                        override fun get(key: String): String? = null
+        object :
+            DropwizardMeterRegistry(
+              object : DropwizardConfig {
+                override fun get(key: String): String? = null
 
-                        override fun prefix(): String = ""
-                      },
-                      this,
-                      HierarchicalNameMapper.DEFAULT,
-                      Clock.SYSTEM,
-                  ) {
-                override fun nullGaugeValue(): Double = Double.NaN
-              }
-              .apply {
-                ProcessorMetrics().bindTo(this)
-                JvmMemoryMetrics().bindTo(this)
-                JvmGcMetrics().bindTo(this)
-              }
-        }
+                override fun prefix(): String = ""
+              },
+              this,
+              HierarchicalNameMapper.DEFAULT,
+              Clock.SYSTEM,
+            ) {
+            override fun nullGaugeValue(): Double = Double.NaN
+          }
+          .apply {
+            ProcessorMetrics().bindTo(this)
+            JvmMemoryMetrics().bindTo(this)
+            JvmGcMetrics().bindTo(this)
+          }
+      }
   }
 }
 
@@ -66,7 +66,7 @@ fun main(args: Array<String>) {
     ActorRuntime.getInstance().registerActor(ArbitratorActorImpl::class.java)
   }
   if (role == "philosopher")
-      ActorRuntime.getInstance().registerActor(PhilosopherActorImpl::class.java)
+    ActorRuntime.getInstance().registerActor(PhilosopherActorImpl::class.java)
   runApplication<DiningPhilosophers>(*args)
 }
 
