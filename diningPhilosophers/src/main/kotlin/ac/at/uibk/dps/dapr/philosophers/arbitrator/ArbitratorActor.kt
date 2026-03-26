@@ -2,12 +2,10 @@ package ac.at.uibk.dps.dapr.philosophers.arbitrator
 
 import io.dapr.actors.ActorMethod
 import io.dapr.actors.ActorType
-import reactor.core.publisher.Mono
 
 @ActorType(name = "ArbitratorActor")
 interface ArbitratorActor {
+  @ActorMethod(name = "hungry") fun hungry(data: Map<String, Any>)
 
-  @ActorMethod(name = "requestForks") fun requestForks(data: Map<String, Any>): Mono<Void>
-
-  @ActorMethod(name = "doneEating") fun doneEating(data: Map<String, Any>): Mono<Void>
+  @ActorMethod(name = "release") fun release(data: Map<String, Any>)
 }
