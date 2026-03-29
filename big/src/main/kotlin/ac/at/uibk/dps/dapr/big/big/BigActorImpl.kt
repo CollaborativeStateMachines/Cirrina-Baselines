@@ -17,7 +17,7 @@ class BigActorImpl(runtimeContext: ActorRuntimeContext<BigActorImpl>, val actorI
   var counter = metricRegistry.counter("big.pings")
   var eventTimer = metricRegistry.timer("event.latency")
 
-  private val neighbors: IntArray = (0..5).filter { it != actorId.toString().toInt() }.toIntArray()
+  private val neighbors: IntArray = (0..11).filter { it != actorId.toString().toInt() }.toIntArray()
   private var count = 0
 
   override fun register() {
