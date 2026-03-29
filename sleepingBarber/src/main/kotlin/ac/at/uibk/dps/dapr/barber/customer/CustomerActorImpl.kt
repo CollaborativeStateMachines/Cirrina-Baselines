@@ -1,36 +1,56 @@
 package ac.at.uibk.dps.dapr.barber.customer
 
 import ac.at.uibk.dps.dapr.barber.SleepingBarber
-import ac.at.uibk.dps.dapr.barber.waitingroom.WaitingRoomPubSub
 import io.dapr.actors.ActorId
 import io.dapr.actors.runtime.AbstractActor
 import io.dapr.actors.runtime.ActorRuntimeContext
-import io.micrometer.core.instrument.Counter
-import io.micrometer.core.instrument.Metrics
-import reactor.core.publisher.Mono
+import io.dapr.client.DaprClient
+import io.dapr.client.DaprClientBuilder
+import java.util.concurrent.TimeUnit
+import kotlin.time.Clock
 
 class CustomerActorImpl(runtimeContext: ActorRuntimeContext<CustomerActorImpl>, id: ActorId) :
   AbstractActor(runtimeContext, id), CustomerActor {
+  val metricsRegistry = SleepingBarber.metricsRegistry
 
-  companion object {
-    const val COUNTER_NAME = "customer_rounds"
+  val client: DaprClient? = DaprClientBuilder().build()
+
+  var count = 0
+
+  override fun request() {
+    client!!.publishEvent("pubsub", "enter", getMap(id.toString().toInt())).subscribe()
   }
 
-  var completedRounds = 0
-
-  var metricsCounter: Counter? = Metrics.counter(COUNTER_NAME, "customer", id.toString())
-
-  override fun enterWaitingRoom(): Mono<Void> {
-    return WaitingRoomPubSub.newCustomer(SleepingBarber.daprClient, id.toString().toInt())
+  override fun full(data: Map<String, Any>) {
+    measureEventTime(data)
+    request()
   }
 
-  override fun waitingRoomFull(): Mono<Void> {
-    return WaitingRoomPubSub.newCustomer(SleepingBarber.daprClient, id.toString().toInt())
+  override fun comeIn(data: Map<String, Any>) {
+    measureEventTime(data)
+    ++count
+    metricsRegistry.counter("customer.haircuts").inc(1L)
   }
 
-  override fun doneCutting(): Mono<Void> {
-    completedRounds++
-    metricsCounter!!.increment()
-    return enterWaitingRoom()
+  override fun done(data: Map<String, Any>) {
+    measureEventTime(data)
+    request()
+  }
+
+  private fun getMap(i: Int): Map<String, Any> {
+    val now = Clock.System.now()
+    val epochNanos = (now.epochSeconds * 1_000_000_000L) + now.nanosecondsOfSecond
+    return mapOf("id" to i, "time" to epochNanos)
+  }
+
+  private fun measureEventTime(data: Map<String, Any>) {
+    val now = Clock.System.now()
+    val nowNanos = (now.epochSeconds * 1_000_000_000L) + now.nanosecondsOfSecond
+
+    val deltaNanos = (nowNanos - data["time"] as Long).coerceAtLeast(0L)
+
+    SleepingBarber.Companion.metricsRegistry
+      .timer("event.latency")!!
+      .update((deltaNanos), TimeUnit.NANOSECONDS)
   }
 }
