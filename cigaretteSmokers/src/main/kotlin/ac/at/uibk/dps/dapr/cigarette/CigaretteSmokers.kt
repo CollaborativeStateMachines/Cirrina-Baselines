@@ -70,7 +70,7 @@ fun main(args: Array<String>) {
 class AutoStarter : ApplicationRunner {
 
   override fun run(args: ApplicationArguments?) {
-    val role = System.getenv("ROLE") ?: "arbiter"
+    val role = System.getenv("ROLE") ?: "smoker"
     if (role != "arbiter") return
 
     val proxy =
