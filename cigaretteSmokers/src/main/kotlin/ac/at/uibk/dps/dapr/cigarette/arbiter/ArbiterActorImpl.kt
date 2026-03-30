@@ -14,7 +14,7 @@ class ArbiterActorImpl(runtimeContext: ActorRuntimeContext<ArbiterActorImpl>, ac
 
   val client: DaprClient = DaprClientBuilder().build()
 
-  val ingredients = listOf(0, 1, 2)
+  val ingredients = arrayListOf(0, 1, 2)
   var count = 0
 
   var metricRegistry = CigaretteSmokers.provideMetricRegistry()
@@ -29,7 +29,7 @@ class ArbiterActorImpl(runtimeContext: ActorRuntimeContext<ArbiterActorImpl>, ac
     ++count
     metricRegistry.counter("arbiter.rounds").inc()
 
-    val provide = ingredients.toMutableList()
+    val provide = ArrayList(ingredients)
     provide.remove(provide.random())
 
     now = Clock.System.now()
