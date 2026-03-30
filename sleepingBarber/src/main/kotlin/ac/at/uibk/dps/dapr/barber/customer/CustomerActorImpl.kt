@@ -6,7 +6,9 @@ import io.dapr.actors.runtime.AbstractActor
 import io.dapr.actors.runtime.ActorRuntimeContext
 import io.dapr.client.DaprClient
 import io.dapr.client.DaprClientBuilder
+import java.security.SecureRandom
 import java.util.concurrent.TimeUnit
+import kotlin.random.Random
 import kotlin.time.Clock
 
 class CustomerActorImpl(runtimeContext: ActorRuntimeContext<CustomerActorImpl>, id: ActorId) :
@@ -14,6 +16,14 @@ class CustomerActorImpl(runtimeContext: ActorRuntimeContext<CustomerActorImpl>, 
   val metricsRegistry = SleepingBarber.metricsRegistry
 
   val client: DaprClient? = DaprClientBuilder().build()
+
+  private val seedGenerator = SecureRandom()
+  private val threadRng =
+    object : ThreadLocal<Random>() {
+      override fun initialValue(): Random {
+        return Random(seedGenerator.nextLong())
+      }
+    }
 
   var count = 0
 
@@ -23,6 +33,7 @@ class CustomerActorImpl(runtimeContext: ActorRuntimeContext<CustomerActorImpl>, 
 
   override fun full(data: Map<String, Any>) {
     measureEventTime(data)
+    Thread.sleep(randomAround(10, 2).toLong())
     request()
   }
 
@@ -52,5 +63,9 @@ class CustomerActorImpl(runtimeContext: ActorRuntimeContext<CustomerActorImpl>, 
     SleepingBarber.Companion.metricsRegistry
       .timer("event.latency")!!
       .update((deltaNanos), TimeUnit.NANOSECONDS)
+  }
+
+  private fun randomAround(base: Int, delta: Int): Int {
+    return (base - delta..base + delta).random(threadRng.get())
   }
 }
