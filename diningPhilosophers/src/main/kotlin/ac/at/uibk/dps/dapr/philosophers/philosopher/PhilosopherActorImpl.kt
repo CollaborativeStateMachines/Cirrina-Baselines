@@ -44,6 +44,12 @@ class PhilosopherActorImpl(runtimeContext: ActorRuntimeContext<PhilosopherActorI
     metricsRegistry.counter("philosopher.meals").inc(1L)
 
     client.publishEvent("pubsub", "release", getMap()).subscribe()
+
+    thinking()
+  }
+
+  private fun thinking() {
+    Thread.sleep(randomAround(10, 2).toLong())
     client.publishEvent("pubsub", "hungry", getMap()).subscribe()
   }
 
