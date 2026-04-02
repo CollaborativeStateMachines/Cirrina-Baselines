@@ -29,7 +29,7 @@ class WaitingRoomActorImpl(runtimeContext: ActorRuntimeContext<WaitingRoomActorI
       if (isBarberSleeping) {
         isBarberSleeping = false
         client.publishEvent("pubsub", "sit", getMap(waiting[0])).subscribe()
-        waiting.remove(0)
+        waiting.removeAt(0)
       }
     } else {
       client.publishEvent("pubsub", "full", getMap(customer)).subscribe()
@@ -47,7 +47,7 @@ class WaitingRoomActorImpl(runtimeContext: ActorRuntimeContext<WaitingRoomActorI
     if (!waiting.isEmpty()) {
       isBarberSleeping = false
       client.publishEvent("pubsub", "sit", getMap(waiting[0])).subscribe()
-      waiting.remove(0)
+      waiting.removeAt(0)
     }
   }
 
