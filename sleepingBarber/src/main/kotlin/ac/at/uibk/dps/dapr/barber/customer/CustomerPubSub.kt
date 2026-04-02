@@ -15,14 +15,14 @@ import org.springframework.web.bind.annotation.RestController
 class CustomerPubSub {
   val id = System.getenv("CUSTOMER_ID")?.toInt() ?: 0
 
-  val customerProxy: CustomerActor? =
+  val customerProxy =
     ActorProxyBuilder(CustomerActor::class.java, ActorClient()).build(ActorId(id.toString()))
 
   @Topic(name = "full", pubsubName = "pubsub")
   @PostMapping("/full")
   fun fullSubscriber(@RequestBody event: CloudEvent<Map<String, Any>>) {
     if (event.data["id"] == id) {
-      customerProxy!!.full(event.data)
+      customerProxy.full(event.data)
     }
   }
 
@@ -30,7 +30,7 @@ class CustomerPubSub {
   @PostMapping("/comeIn")
   fun comeInSubscriber(@RequestBody event: CloudEvent<Map<String, Any>>) {
     if (event.data["id"] == id) {
-      customerProxy!!.comeIn(event.data)
+      customerProxy.comeIn(event.data)
     }
   }
 
@@ -38,7 +38,7 @@ class CustomerPubSub {
   @PostMapping("/done")
   fun doneSubscriber(@RequestBody event: CloudEvent<Map<String, Any>>) {
     if (event.data["id"] == id) {
-      customerProxy!!.done(event.data)
+      customerProxy.done(event.data)
     }
   }
 }

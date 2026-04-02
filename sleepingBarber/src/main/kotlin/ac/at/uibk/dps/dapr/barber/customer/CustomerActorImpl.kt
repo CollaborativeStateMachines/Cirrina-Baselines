@@ -4,7 +4,6 @@ import ac.at.uibk.dps.dapr.barber.SleepingBarber
 import io.dapr.actors.ActorId
 import io.dapr.actors.runtime.AbstractActor
 import io.dapr.actors.runtime.ActorRuntimeContext
-import io.dapr.client.DaprClient
 import io.dapr.client.DaprClientBuilder
 import java.security.SecureRandom
 import java.util.concurrent.TimeUnit
@@ -13,9 +12,8 @@ import kotlin.time.Clock
 
 class CustomerActorImpl(runtimeContext: ActorRuntimeContext<CustomerActorImpl>, id: ActorId) :
   AbstractActor(runtimeContext, id), CustomerActor {
-  val metricsRegistry = SleepingBarber.metricsRegistry
 
-  val client: DaprClient? = DaprClientBuilder().build()
+  val client = DaprClientBuilder().build()
 
   private val seedGenerator = SecureRandom()
   private val threadRng =
@@ -24,11 +22,12 @@ class CustomerActorImpl(runtimeContext: ActorRuntimeContext<CustomerActorImpl>, 
         return Random(seedGenerator.nextLong())
       }
     }
+  private val metricsRegistry = SleepingBarber.metricsRegistry
 
   var count = 0
 
   override fun request() {
-    client!!.publishEvent("pubsub", "enter", getMap(id.toString().toInt())).subscribe()
+    client.publishEvent("pubsub", "enter", getMap(id.toString().toInt())).subscribe()
   }
 
   override fun full(data: Map<String, Any>) {
@@ -60,9 +59,7 @@ class CustomerActorImpl(runtimeContext: ActorRuntimeContext<CustomerActorImpl>, 
 
     val deltaNanos = (nowNanos - data["time"] as Long).coerceAtLeast(0L)
 
-    SleepingBarber.Companion.metricsRegistry
-      .timer("event.latency")!!
-      .update((deltaNanos), TimeUnit.NANOSECONDS)
+    metricsRegistry.timer("event.latency").update((deltaNanos), TimeUnit.NANOSECONDS)
   }
 
   private fun randomAround(base: Int, delta: Int): Int {

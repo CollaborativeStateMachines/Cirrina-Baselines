@@ -13,12 +13,12 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @ConditionalOnProperty("app.role", havingValue = "barber")
 class BarberPubSub {
-  val barberActor: BarberActor? =
+  val barberActor =
     ActorProxyBuilder(BarberActor::class.java, ActorClient()).build(ActorId("barber"))
 
-  @Topic(name = "cutting", pubsubName = "pubsub")
-  @PostMapping("/cutting")
-  fun cuttingSubscriber(@RequestBody event: CloudEvent<Map<String, Any>>) {
-    barberActor!!.cutting(event.data)
+  @Topic(name = "sit", pubsubName = "pubsub")
+  @PostMapping("/sit")
+  fun sittingSubscriber(@RequestBody event: CloudEvent<Map<String, Any>>) {
+    barberActor.cutting(event.data)
   }
 }
