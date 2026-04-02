@@ -1,6 +1,5 @@
 package ac.at.uibk.dps.dapr.barber
 
-import ac.at.uibk.dps.dapr.barber.barber.BarberActor
 import ac.at.uibk.dps.dapr.barber.barber.BarberActorImpl
 import ac.at.uibk.dps.dapr.barber.customer.CustomerActor
 import ac.at.uibk.dps.dapr.barber.customer.CustomerActorImpl
@@ -20,7 +19,6 @@ import io.micrometer.core.instrument.util.HierarchicalNameMapper
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.util.concurrent.TimeUnit
-import kotlin.apply
 import org.springframework.boot.ApplicationArguments
 import org.springframework.boot.ApplicationRunner
 import org.springframework.boot.autoconfigure.SpringBootApplication
@@ -61,7 +59,7 @@ class SleepingBarber {
 
 fun main(args: Array<String>) {
   val role = System.getenv("ROLE") ?: "customer"
-  if (role == "waiting_room")
+  if (role == "waitingRoom")
     ActorRuntime.getInstance().registerActor(WaitingRoomActorImpl::class.java)
   if (role == "barber") ActorRuntime.getInstance().registerActor(BarberActorImpl::class.java)
   if (role == "customer") ActorRuntime.getInstance().registerActor(CustomerActorImpl::class.java)
@@ -77,8 +75,6 @@ class AutoStarter : ApplicationRunner {
       if (role == "customer") {
         val id = System.getenv("CUSTOMER_ID")
         ActorProxyBuilder(CustomerActor::class.java, client).build(ActorId(id)).request()
-      } else if (role == "barber") {
-        ActorProxyBuilder(BarberActor::class.java, client).build(ActorId("barber")).sleeping()
       }
     }
   }

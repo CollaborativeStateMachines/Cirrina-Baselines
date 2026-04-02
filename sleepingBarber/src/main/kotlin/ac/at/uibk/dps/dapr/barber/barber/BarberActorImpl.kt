@@ -1,12 +1,10 @@
 package ac.at.uibk.dps.dapr.barber.barber
 
-import ac.at.uibk.dps.dapr.barber.SleepingBarber.Companion.metricsRegistry
+import ac.at.uibk.dps.dapr.barber.SleepingBarber
 import io.dapr.actors.ActorId
 import io.dapr.actors.runtime.AbstractActor
 import io.dapr.actors.runtime.ActorRuntimeContext
-import io.dapr.client.DaprClient
 import io.dapr.client.DaprClientBuilder
-import java.lang.Thread.sleep
 import java.security.SecureRandom
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
@@ -14,7 +12,7 @@ import kotlin.time.Clock
 
 class BarberActorImpl(runtimeContext: ActorRuntimeContext<BarberActorImpl>, id: ActorId) :
   AbstractActor(runtimeContext, id), BarberActor {
-  val client: DaprClient? = DaprClientBuilder().build()
+  val client = DaprClientBuilder().build()
 
   private val seedGenerator = SecureRandom()
 
@@ -25,17 +23,22 @@ class BarberActorImpl(runtimeContext: ActorRuntimeContext<BarberActorImpl>, id: 
       }
     }
 
-  override fun sleeping() {
-    client!!.publishEvent("pubsub", "ready", getMap()).subscribe()
-  }
+  private val metricsRegistry = SleepingBarber.metricsRegistry
 
   override fun cutting(data: Map<String, Any>) {
     measureEventTime(data)
     val customer = data["id"].toString().toInt()
-    client!!.publishEvent("pubsub", "comeIn", getMap(customer)).subscribe()
-    sleep(randomAround(10, 2).toLong())
+
+    client.publishEvent("pubsub", "comeIn", getMap(customer)).subscribe()
+
+    Thread.sleep(randomAround(10, 2).toLong())
+
+    `continue`(customer)
+  }
+
+  private fun `continue`(customer: Int) {
     client.publishEvent("pubsub", "done", getMap(customer)).subscribe()
-    sleeping()
+    client.publishEvent("pubsub", "ready", getMap()).subscribe()
   }
 
   fun randomAround(base: Int, delta: Int): Int {
@@ -62,6 +65,6 @@ class BarberActorImpl(runtimeContext: ActorRuntimeContext<BarberActorImpl>, id: 
 
     val deltaNanos = (nowNanos - data["time"] as Long).coerceAtLeast(0L)
 
-    metricsRegistry.timer("event.latency")!!.update((deltaNanos), TimeUnit.NANOSECONDS)
+    metricsRegistry.timer("event.latency").update((deltaNanos), TimeUnit.NANOSECONDS)
   }
 }
