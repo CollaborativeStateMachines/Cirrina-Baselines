@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-@ConditionalOnProperty("app.role", havingValue = "waiting_room")
+@ConditionalOnProperty("app.role", havingValue = "waitingRoom")
 class WaitingRoomPubSub {
   val waitingRoomActor =
     ActorProxyBuilder(WaitingRoomActor::class.java, ActorClient()).build(ActorId("waitingRoom"))
