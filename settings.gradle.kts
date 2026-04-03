@@ -11,3 +11,5 @@ include("count")
 include("diningPhilosophers")
 
 include("sleepingBarber")
+
+include("pingPong")
