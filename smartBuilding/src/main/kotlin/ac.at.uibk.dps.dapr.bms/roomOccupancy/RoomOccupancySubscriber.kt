@@ -1,4 +1,4 @@
-package ac.at.uibk.dps.dapr.bms.roomoccupancy
+package ac.at.uibk.dps.dapr.bms.roomOccupancy
 
 import io.dapr.Topic
 import io.dapr.actors.ActorId

@@ -1,4 +1,4 @@
-package ac.at.uibk.dps.dapr.bms.accessControl
+package ac.at.uibk.dps.dapr.bms.security
 
 import io.dapr.actors.ActorType
 
