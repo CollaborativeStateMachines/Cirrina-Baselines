@@ -1,4 +1,4 @@
-package ac.at.uibk.dps.dapr.bms.firedoor
+package ac.at.uibk.dps.dapr.bms.fire
 
 import io.dapr.Topic
 import io.dapr.actors.ActorId

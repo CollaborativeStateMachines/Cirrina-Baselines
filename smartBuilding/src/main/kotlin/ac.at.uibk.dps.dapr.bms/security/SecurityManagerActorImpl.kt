@@ -1,4 +1,4 @@
-package ac.at.uibk.dps.dapr.bms.securityManager
+package ac.at.uibk.dps.dapr.bms.security
 
 import ac.at.uibk.dps.dapr.bms.BuildingServiceClient
 import io.dapr.actors.ActorId
