@@ -28,7 +28,9 @@ class DynamicPhilosophersPubSub {
     val actorNumber = event.data["target"].toString().filter { it.isDigit() }.toInt()
 
     if ((actorNumber % n) == id) {
-      philosopherProxyBuilder.build(ActorId((event.data["target"].toString()))).onGiveLeftFork()
+      philosopherProxyBuilder
+        .build(ActorId((event.data["target"].toString())))
+        .onGiveLeftFork(event.data)
     }
   }
 
@@ -38,7 +40,9 @@ class DynamicPhilosophersPubSub {
     val actorNumber = event.data["target"].toString().filter { it.isDigit() }.toInt()
 
     if ((actorNumber % n) == id) {
-      philosopherProxyBuilder.build(ActorId((event.data["target"].toString()))).onGiveRightFork()
+      philosopherProxyBuilder
+        .build(ActorId((event.data["target"].toString())))
+        .onGiveRightFork(event.data)
     }
   }
 
@@ -48,7 +52,9 @@ class DynamicPhilosophersPubSub {
     val actorNumber = event.data["target"].toString().filter { it.isDigit() }.toInt()
 
     if ((actorNumber % n) == id) {
-      philosopherProxyBuilder.build(ActorId((event.data["target"].toString()))).onRequestLeftFork()
+      philosopherProxyBuilder
+        .build(ActorId((event.data["target"].toString())))
+        .onRequestLeftFork(event.data)
     }
   }
 
@@ -58,7 +64,9 @@ class DynamicPhilosophersPubSub {
     val actorNumber = event.data["target"].toString().filter { it.isDigit() }.toInt()
 
     if ((actorNumber % n) == id) {
-      philosopherProxyBuilder.build(ActorId((event.data["target"].toString()))).onRequestRightFork()
+      philosopherProxyBuilder
+        .build(ActorId((event.data["target"].toString())))
+        .onRequestRightFork(event.data)
     }
   }
 

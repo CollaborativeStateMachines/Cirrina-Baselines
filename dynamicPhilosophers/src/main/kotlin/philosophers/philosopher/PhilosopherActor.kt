@@ -6,13 +6,13 @@ import io.dapr.actors.ActorType
 interface PhilosopherActor {
   fun hungry()
 
-  fun onGiveRightFork()
+  fun onGiveRightFork(data: Map<String, Any>)
 
-  fun onGiveLeftFork()
+  fun onGiveLeftFork(data: Map<String, Any>)
 
-  fun onRequestLeftFork()
+  fun onRequestLeftFork(data: Map<String, Any>)
 
-  fun onRequestRightFork()
+  fun onRequestRightFork(data: Map<String, Any>)
 
   fun onJoin(data: Map<String, Any>)
 

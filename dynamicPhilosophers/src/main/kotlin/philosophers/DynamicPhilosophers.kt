@@ -16,14 +16,14 @@ import io.micrometer.core.instrument.binder.system.ProcessorMetrics
 import io.micrometer.core.instrument.dropwizard.DropwizardConfig
 import io.micrometer.core.instrument.dropwizard.DropwizardMeterRegistry
 import io.micrometer.core.instrument.util.HierarchicalNameMapper
+import java.nio.file.Files
+import java.nio.file.Paths
+import java.util.concurrent.TimeUnit
 import org.springframework.boot.ApplicationArguments
 import org.springframework.boot.ApplicationRunner
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 import org.springframework.stereotype.Component
-import java.nio.file.Files
-import java.nio.file.Paths
-import java.util.concurrent.TimeUnit
 
 @SpringBootApplication
 class DynamicPhilosophers {

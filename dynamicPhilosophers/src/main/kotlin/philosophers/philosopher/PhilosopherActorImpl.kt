@@ -8,20 +8,26 @@ import io.dapr.client.DaprClient
 import io.dapr.client.DaprClientBuilder
 import java.security.SecureRandom
 import java.time.Duration
+import java.util.concurrent.TimeUnit
 import kotlin.random.Random
+import kotlin.time.Clock
 
 class PhilosopherActorImpl(
   runtimeContext: ActorRuntimeContext<PhilosopherActorImpl>,
   actorId: ActorId,
 ) : AbstractActor(runtimeContext, actorId), PhilosopherActor {
 
+  // Moved to companion object to prevent gRPC connection leaks!
+  companion object {
+    private val client: DaprClient = DaprClientBuilder().build()
+  }
+
   enum class State {
+    INACTIVE,
     HUNGRY,
     EATING,
     THINKING,
   }
-
-  private val client: DaprClient = DaprClientBuilder().build()
 
   private val seedGenerator = SecureRandom()
   private val threadRng =
@@ -33,7 +39,7 @@ class PhilosopherActorImpl(
 
   private val metricsRegistry = DynamicPhilosophers.provideMetricRegistry()
 
-  private var state = State.HUNGRY
+  private var state = State.INACTIVE
   private val id = actorId.toString()
   private var hasLeftFork = true
   private var hasRightFork = true
@@ -49,50 +55,68 @@ class PhilosopherActorImpl(
   private var meals: Int = 0
 
   override fun onInstantiate(data: Map<String, Any>) {
+    val now = Clock.System.now()
+    val nowNanos = (now.epochSeconds * 1_000_000_000L) + now.nanosecondsOfSecond
+    val deltaNanos = (nowNanos - data["time"] as Long).coerceAtLeast(0L)
+
+    metricsRegistry.timer("event.latency")!!.update((deltaNanos), TimeUnit.NANOSECONDS)
+
     leftNeighbor = data["leftNeighbor"] as String
     rightNeighbor = data["rightNeighbor"] as String
+
     hungry()
   }
 
   override fun hungry() {
     state = State.HUNGRY
-    println("$id is hungry")
-    println("$id Tokens: $hasLeftToken $hasRightToken")
-    println("$id Forks: $hasLeftFork $hasRightFork")
-    println("$id Dirty: $leftForkDirty $rightForkDirty")
 
     if (hasPendingJoin) {
-      println("$id processing pending join for $pendingJoinId")
       if (rightNeighbor == "instantiated0" && pendingJoinId != id) {
-        println("$id updating rightNeighbor to $pendingJoinId")
         rightNeighbor = pendingJoinId
         hasRightFork = false
         hasRightToken = true
         rightForkDirty = true
       }
+
       if (id == "instantiated0" && pendingJoinId != id) {
-        println("$id updating leftNeighbor to $leftNeighbor")
         leftNeighbor = pendingJoinId
         hasLeftFork = false
         hasLeftToken = true
         leftForkDirty = true
       }
+
       hasPendingJoin = false
     }
+
     evaluateForks()
   }
 
   private fun evaluateForks() {
+    val now = Clock.System.now()
+    val epochNanos = (now.epochSeconds * 1_000_000_000L) + now.nanosecondsOfSecond
+
     if (!hasLeftFork && hasLeftToken) {
-      println("$id requesting left fork from $leftNeighbor")
       hasLeftToken = false
-      client.publishEvent("pubsub", "requestRightFork", mapOf("target" to leftNeighbor)).subscribe()
+      client
+        .publishEvent(
+          "pubsub",
+          "requestRightFork",
+          mapOf("target" to leftNeighbor, "time" to epochNanos),
+        )
+        .subscribe()
     }
+
     if (!hasRightFork && hasRightToken) {
-      println("$id requesting right fork from $rightNeighbor")
       hasRightToken = false
-      client.publishEvent("pubsub", "requestLeftFork", mapOf("target" to rightNeighbor)).subscribe()
+      client
+        .publishEvent(
+          "pubsub",
+          "requestLeftFork",
+          mapOf("target" to rightNeighbor, "time" to epochNanos),
+        )
+        .subscribe()
     }
+
     tryEat()
   }
 
@@ -104,7 +128,6 @@ class PhilosopherActorImpl(
 
   private fun eating() {
     state = State.EATING
-    println("$id EATING (meals so far: $meals)")
     this.registerActorTimer(
         "eating",
         "ate",
@@ -123,16 +146,14 @@ class PhilosopherActorImpl(
     rightForkDirty = true
 
     if (hasPendingJoin) {
-      println("$id processing pending join for $pendingJoinId")
+
       if (rightNeighbor == "instantiated0" && pendingJoinId != id) {
-        println("$id updating rightNeighbor to $pendingJoinId")
         rightNeighbor = pendingJoinId
         hasRightFork = false
         hasRightToken = true
         rightForkDirty = true
       }
       if (id == "instantiated0" && pendingJoinId != id) {
-        println("$id updating leftNeighbor to $leftNeighbor")
         leftNeighbor = pendingJoinId
         hasLeftFork = false
         hasLeftToken = true
@@ -141,23 +162,37 @@ class PhilosopherActorImpl(
       hasPendingJoin = false
     }
 
-    println("$id done eating, deffered L= $hasLeftToken R= $hasRightToken")
+    val now = Clock.System.now()
+    val epochNanos = (now.epochSeconds * 1_000_000_000L) + now.nanosecondsOfSecond
+
     if (hasLeftToken && hasLeftFork) {
-      println("$id fulfilling deferred LEFT to $leftNeighbor")
       hasLeftFork = false
-      client.publishEvent("pubsub", "giveRightFork", mapOf("target" to leftNeighbor)).subscribe()
+
+      client
+        .publishEvent(
+          "pubsub",
+          "giveRightFork",
+          mapOf("target" to leftNeighbor, "time" to epochNanos),
+        )
+        .subscribe()
     }
     if (hasRightToken && hasRightFork) {
-      println("$id fulfilling deferred RIGHT to $rightNeighbor")
       hasRightFork = false
-      client.publishEvent("pubsub", "giveLeftFork", mapOf("target" to rightNeighbor)).subscribe()
+
+      client
+        .publishEvent(
+          "pubsub",
+          "giveLeftFork",
+          mapOf("target" to rightNeighbor, "time" to epochNanos),
+        )
+        .subscribe()
     }
     thinking()
   }
 
   private fun thinking() {
     state = State.THINKING
-    println("$id thinking")
+
     this.registerActorTimer(
         "thinking",
         "thought",
@@ -172,94 +207,148 @@ class PhilosopherActorImpl(
     hungry()
   }
 
-  override fun onGiveLeftFork() {
+  override fun onGiveLeftFork(data: Map<String, Any>) {
+    val now = Clock.System.now()
+    val nowNanos = (now.epochSeconds * 1_000_000_000L) + now.nanosecondsOfSecond
+    val deltaNanos = (nowNanos - data["time"] as Long).coerceAtLeast(0L)
+
+    metricsRegistry.timer("event.latency")!!.update((deltaNanos), TimeUnit.NANOSECONDS)
+
     if (state == State.HUNGRY) {
       hasLeftFork = true
       leftForkDirty = false
-      println("$id received LEFT fork, forks: $hasLeftFork $hasRightFork")
       tryEat()
     }
   }
 
-  override fun onGiveRightFork() {
+  override fun onGiveRightFork(data: Map<String, Any>) {
+    val now = Clock.System.now()
+    val nowNanos = (now.epochSeconds * 1_000_000_000L) + now.nanosecondsOfSecond
+    val deltaNanos = (nowNanos - data["time"] as Long).coerceAtLeast(0L)
+
+    metricsRegistry.timer("event.latency")!!.update((deltaNanos), TimeUnit.NANOSECONDS)
+
     if (state == State.HUNGRY) {
       hasRightFork = true
       rightForkDirty = false
-      println("$id received RIGHT fork, forks: $hasLeftFork $hasRightFork")
       tryEat()
     }
   }
 
-  override fun onRequestLeftFork() {
+  override fun onRequestLeftFork(data: Map<String, Any>) {
+    val now = Clock.System.now()
+    val nowNanos = (now.epochSeconds * 1_000_000_000L) + now.nanosecondsOfSecond
+    val deltaNanos = (nowNanos - data["time"] as Long).coerceAtLeast(0L)
+
+    metricsRegistry.timer("event.latency")!!.update((deltaNanos), TimeUnit.NANOSECONDS)
+
     when (state) {
       State.HUNGRY -> {
-        println("$id received Left request from $leftNeighbor (in hungry)")
         hasLeftToken = true
-
         if (hasLeftFork && leftForkDirty) {
-          println("$id surrendering dirty LEFT fork to $leftNeighbor")
           hasLeftFork = false
+
+          val timeNow = Clock.System.now()
+          val epochNanos = (timeNow.epochSeconds * 1_000_000_000L) + timeNow.nanosecondsOfSecond
+
           client
-            .publishEvent("pubsub", "giveRightFork", mapOf("target" to leftNeighbor))
+            .publishEvent(
+              "pubsub",
+              "giveRightFork",
+              mapOf("target" to leftNeighbor, "time" to epochNanos),
+            )
             .subscribe()
           hasLeftToken = false
+
           client
-            .publishEvent("pubsub", "requestRightFork", mapOf("target" to leftNeighbor))
+            .publishEvent(
+              "pubsub",
+              "requestRightFork",
+              mapOf("target" to leftNeighbor, "time" to epochNanos),
+            )
             .subscribe()
         }
       }
       State.EATING -> {
-        println("$id deferring LEFT fork request (eating)")
         hasLeftToken = true
       }
       State.THINKING -> {
         hasLeftToken = true
         if (hasLeftFork && leftForkDirty) {
-          println("$id surrendering LEFT fork (thinking) to $leftNeighbor")
           hasLeftFork = false
           client
-            .publishEvent("pubsub", "giveRightFork", mapOf("target" to leftNeighbor))
+            .publishEvent(
+              "pubsub",
+              "giveRightFork",
+              mapOf("target" to leftNeighbor, "time" to nowNanos),
+            )
             .subscribe()
         }
       }
+      State.INACTIVE -> {}
     }
   }
 
-  override fun onRequestRightFork() {
+  override fun onRequestRightFork(data: Map<String, Any>) {
+    val now = Clock.System.now()
+    val nowNanos = (now.epochSeconds * 1_000_000_000L) + now.nanosecondsOfSecond
+    val deltaNanos = (nowNanos - data["time"] as Long).coerceAtLeast(0L)
+
+    metricsRegistry.timer("event.latency")!!.update((deltaNanos), TimeUnit.NANOSECONDS)
+
     when (state) {
       State.HUNGRY -> {
-        println("$id received RIGHT request from $rightNeighbor (in hungry)")
         hasRightToken = true
         if (hasRightFork && rightForkDirty) {
-          println("$id surrendering dirty RIGHT fork to $rightNeighbor")
           hasRightFork = false
+
           client
-            .publishEvent("pubsub", "giveLeftFork", mapOf("target" to rightNeighbor))
+            .publishEvent(
+              "pubsub",
+              "giveLeftFork",
+              mapOf("target" to rightNeighbor, "time" to nowNanos),
+            )
             .subscribe()
+
           hasRightToken = false
+
           client
-            .publishEvent("pubsub", "requestLeftFork", mapOf("target" to rightNeighbor))
+            .publishEvent(
+              "pubsub",
+              "requestLeftFork",
+              mapOf("target" to rightNeighbor, "time" to nowNanos),
+            )
             .subscribe()
         }
       }
       State.EATING -> {
-        println("$id deferring RIGHT fork request (eating)")
         hasRightToken = true
       }
       State.THINKING -> {
         hasRightToken = true
         if (hasRightFork && rightForkDirty) {
-          println("$id surrendering RIGHT fork (thinking) to $rightNeighbor")
           hasRightFork = false
+
           client
-            .publishEvent("pubsub", "giveLeftFork", mapOf("target" to rightNeighbor))
+            .publishEvent(
+              "pubsub",
+              "giveLeftFork",
+              mapOf("target" to rightNeighbor, "time" to nowNanos),
+            )
             .subscribe()
         }
       }
+      State.INACTIVE -> {}
     }
   }
 
   override fun onJoin(data: Map<String, Any>) {
+    val now = Clock.System.now()
+    val nowNanos = (now.epochSeconds * 1_000_000_000L) + now.nanosecondsOfSecond
+    val deltaNanos = (nowNanos - data["time"] as Long).coerceAtLeast(0L)
+
+    metricsRegistry.timer("event.latency")!!.update((deltaNanos), TimeUnit.NANOSECONDS)
+
     when (state) {
       State.HUNGRY -> {
         if (rightNeighbor == "instantiated0" && id != data["id"]) {
@@ -282,6 +371,7 @@ class PhilosopherActorImpl(
         hasPendingJoin = true
         pendingJoinId = data["id"].toString()
       }
+      State.INACTIVE -> {}
     }
   }
 
