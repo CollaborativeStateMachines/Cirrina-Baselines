@@ -57,7 +57,7 @@ class InstantiatorActorImpl(
         "instantiate",
         "instantiate",
         ByteArray(0),
-        Duration.ofMillis(5000L),
+        Duration.ofMillis(10000L),
         Duration.ZERO,
       )
       .subscribe()
