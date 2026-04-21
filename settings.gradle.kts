@@ -15,3 +15,5 @@ include("sleepingBarber")
 include("pingPong")
 
 include("smartBuilding")
+
+include("dynamicPhilosophers")
