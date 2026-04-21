@@ -16,4 +16,4 @@ include("pingPong")
 
 include("smartBuilding")
 
-include("chandyMisra")
+include("dynamicPhilosophers")
