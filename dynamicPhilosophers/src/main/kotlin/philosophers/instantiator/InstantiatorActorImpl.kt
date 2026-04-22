@@ -12,8 +12,8 @@ import kotlin.time.Clock
 
 class InstantiatorActorImpl(
   runtimeContext: ActorRuntimeContext<InstantiatorActorImpl>,
-  id: ActorId,
-) : AbstractActor(runtimeContext, id), InstantiatorActor {
+  actorId: ActorId,
+) : AbstractActor(runtimeContext, actorId), InstantiatorActor {
 
   enum class State {
     WAIT,
@@ -21,7 +21,6 @@ class InstantiatorActorImpl(
   }
 
   private val client: DaprClient = DaprClientBuilder().build()
-
   val metricsRegistry = DynamicPhilosophers.provideMetricRegistry()
 
   private var state = State.WAIT
@@ -32,16 +31,17 @@ class InstantiatorActorImpl(
 
   override fun waitTurn() {
     state = State.WAIT
+
     if (count == 0) {
-      count = n
+      count = n // Your specified high count
       timer()
     }
   }
 
-  override fun onJoin(data: Map<String, Any>) {
+  override fun onNodeCreated(data: Map<String, Any>) {
     val now = Clock.System.now()
     val nowNanos = (now.epochSeconds * 1_000_000_000L) + now.nanosecondsOfSecond
-    val deltaNanos = (nowNanos - data["time"] as Long).coerceAtLeast(0L)
+    val deltaNanos = (nowNanos - (data["time"] as? Long ?: 0L)).coerceAtLeast(0L)
 
     metricsRegistry.timer("event.latency")!!.update((deltaNanos), TimeUnit.NANOSECONDS)
 
@@ -57,18 +57,24 @@ class InstantiatorActorImpl(
         "instantiate",
         "instantiate",
         ByteArray(0),
-        Duration.ofMillis(10000L),
-        Duration.ZERO,
+        Duration.ofMillis(5000L),
+        Duration.ofMillis(-1),
       )
       .subscribe()
   }
 
   override fun instantiate() {
+    if (this.state != State.INSTANTIATE) {
+      return
+    }
+
     val now = Clock.System.now()
     val nowNanos = (now.epochSeconds * 1_000_000_000L) + now.nanosecondsOfSecond
 
-    val leftNeighbor =
-      if (lastInstantiated == 0) "instantiated0" else "instantiated${lastInstantiated-1}"
+    val leftNeighbor = if (lastInstantiated == 0) "none" else "instantiated${lastInstantiated - 1}"
+
+    println("INFO: [Instantiator $id] Firing! Creating philosopher: instantiated$lastInstantiated")
+
     client
       .publishEvent(
         "pubsub",
@@ -76,20 +82,45 @@ class InstantiatorActorImpl(
         mapOf(
           "id" to "instantiated$lastInstantiated",
           "leftNeighbor" to leftNeighbor,
-          "rightNeighbor" to "instantiated0",
+          "rightNeighbor" to "none",
+          "hasLeftFork" to (lastInstantiated > 0).toString(),
+          "hasRightFork" to "false",
+          "leftForkDirty" to "true",
+          "rightForkDirty" to "true",
+          "leftRequested" to "false",
+          "rightRequested" to "false",
+          "leftPending" to "false",
+          "rightPending" to "false",
           "time" to nowNanos,
         ),
       )
       .subscribe()
-    client
-      .publishEvent(
-        "pubsub",
-        "join",
-        mapOf("id" to "instantiated$lastInstantiated", "time" to nowNanos),
-      )
-      .subscribe()
-    lastInstantiated += n
 
+    if (lastInstantiated > 0) {
+      println(
+        "INFO: [Instantiator $id] Sending join event back to instantiated${lastInstantiated - 1}"
+      )
+      client
+        .publishEvent(
+          "pubsub",
+          "join",
+          mapOf(
+            "id" to "instantiated$lastInstantiated",
+            "target" to "instantiated${lastInstantiated - 1}",
+            "time" to nowNanos,
+          ),
+        )
+        .subscribe()
+    }
+
+    println("INFO: [Instantiator $id] Broadcasting cascade nodeCreated event")
+    client.publishEvent("pubsub", "nodeCreated", mapOf("time" to nowNanos)).subscribe()
+
+    increment()
     waitTurn()
+  }
+
+  private fun increment() {
+    lastInstantiated += n
   }
 }
