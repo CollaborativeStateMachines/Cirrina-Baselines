@@ -73,8 +73,6 @@ class InstantiatorActorImpl(
 
     val leftNeighbor = if (lastInstantiated == 0) "none" else "instantiated${lastInstantiated - 1}"
 
-    println("INFO: [Instantiator $id] Firing! Creating philosopher: instantiated$lastInstantiated")
-
     client
       .publishEvent(
         "pubsub",
@@ -97,9 +95,6 @@ class InstantiatorActorImpl(
       .subscribe()
 
     if (lastInstantiated > 0) {
-      println(
-        "INFO: [Instantiator $id] Sending join event back to instantiated${lastInstantiated - 1}"
-      )
       client
         .publishEvent(
           "pubsub",
@@ -113,7 +108,6 @@ class InstantiatorActorImpl(
         .subscribe()
     }
 
-    println("INFO: [Instantiator $id] Broadcasting cascade nodeCreated event")
     client.publishEvent("pubsub", "nodeCreated", mapOf("time" to nowNanos)).subscribe()
 
     increment()

@@ -39,7 +39,6 @@ class PhilosopherActorImpl(
 
   private var state = State.INACTIVE
   private val id = actorId.toString()
-  private val numericId = id.filter { it.isDigit() }
 
   private var leftNeighbor = "none"
   private var rightNeighbor = "none"
@@ -63,20 +62,14 @@ class PhilosopherActorImpl(
     metricsRegistry.timer("event.latency")!!.update(deltaNanos, TimeUnit.NANOSECONDS)
   }
 
-  private fun stateSnapshot(): String {
-    return "L=$hasLeftFork(d=$leftForkDirty,r=$leftRequested,p=$leftPending) R=$hasRightFork(d=$rightForkDirty,r=$rightRequested,p=$rightPending) ln=$leftNeighbor rn=$rightNeighbor"
-  }
-
   override fun onInstantiate(data: Map<String, Any>) {
     recordLatency(data)
     leftNeighbor = data["leftNeighbor"]?.toString() ?: "none"
     rightNeighbor = data["rightNeighbor"]?.toString() ?: "none"
 
-    // MERGE incoming data with any state buffered from early messages
     hasLeftFork = hasLeftFork || (data["hasLeftFork"]?.toString()?.toBooleanStrictOrNull() ?: false)
     hasRightFork = hasRightFork || (data["hasRightFork"]?.toString()?.toBooleanStrictOrNull() ?: false)
 
-    // Dirty flags default to true. If an early fork arrived clean (false), keep it clean (false) using AND.
     leftForkDirty = leftForkDirty && (data["leftForkDirty"]?.toString()?.toBooleanStrictOrNull() ?: true)
     rightForkDirty = rightForkDirty && (data["rightForkDirty"]?.toString()?.toBooleanStrictOrNull() ?: true)
 
@@ -85,7 +78,6 @@ class PhilosopherActorImpl(
     leftPending = leftPending || (data["leftPending"]?.toString()?.toBooleanStrictOrNull() ?: false)
     rightPending = rightPending || (data["rightPending"]?.toString()?.toBooleanStrictOrNull() ?: false)
 
-    println("TRACE: [Node $numericId] onInstantiate ${stateSnapshot()}")
     hungry()
   }
 
@@ -97,7 +89,7 @@ class PhilosopherActorImpl(
   private fun evaluateRequests() {
     if (leftNeighbor != "none" && !hasLeftFork && !leftRequested) {
       leftRequested = true
-      println("TRACE: [Node $numericId] SEND requestRightFork -> $leftNeighbor")
+
       client
         .publishEvent(
           "pubsub",
@@ -108,7 +100,7 @@ class PhilosopherActorImpl(
     }
     if (rightNeighbor != "none" && !hasRightFork && !rightRequested) {
       rightRequested = true
-      println("TRACE: [Node $numericId] SEND requestLeftFork -> $rightNeighbor")
+
       client
         .publishEvent(
           "pubsub",
@@ -152,7 +144,7 @@ class PhilosopherActorImpl(
     if (leftNeighbor != "none" && leftPending && hasLeftFork) {
       hasLeftFork = false
       leftPending = false
-      println("TRACE: [Node $numericId] ate#$meals SEND giveRightFork -> $leftNeighbor")
+
       client
         .publishEvent(
           "pubsub",
@@ -165,7 +157,7 @@ class PhilosopherActorImpl(
     if (rightNeighbor != "none" && rightPending && hasRightFork) {
       hasRightFork = false
       rightPending = false
-      println("TRACE: [Node $numericId] ate#$meals SEND giveLeftFork -> $rightNeighbor")
+
       client
         .publishEvent(
           "pubsub",
@@ -175,7 +167,6 @@ class PhilosopherActorImpl(
         .subscribe()
     }
 
-    println("TRACE: [Node $numericId] ate#$meals -> thinking ${stateSnapshot()}")
     thinking()
   }
 
@@ -198,10 +189,10 @@ class PhilosopherActorImpl(
 
   override fun onGiveLeftFork(data: Map<String, Any>) {
     recordLatency(data)
-    println("TRACE: [Node $numericId] RECV giveLeftFork state=$state ${stateSnapshot()}")
+
     when (state) {
       State.INACTIVE -> {
-        println("TRACE: [Node $numericId] giveLeftFork INACTIVE -> buffering early fork")
+
         hasLeftFork = true
         leftForkDirty = false
         leftRequested = false
@@ -223,10 +214,10 @@ class PhilosopherActorImpl(
 
   override fun onGiveRightFork(data: Map<String, Any>) {
     recordLatency(data)
-    println("TRACE: [Node $numericId] RECV giveRightFork state=$state ${stateSnapshot()}")
+
     when (state) {
       State.INACTIVE -> {
-        println("TRACE: [Node $numericId] giveRightFork INACTIVE -> buffering early fork")
+
         hasRightFork = true
         rightForkDirty = false
         rightRequested = false
@@ -248,26 +239,21 @@ class PhilosopherActorImpl(
 
   override fun onRequestLeftFork(data: Map<String, Any>) {
     recordLatency(data)
-    println("TRACE: [Node $numericId] RECV requestLeftFork state=$state ${stateSnapshot()}")
+
     when (state) {
       State.INACTIVE -> {
-        println("TRACE: [Node $numericId] requestLeftFork INACTIVE -> buffering early request")
         leftPending = true
       }
       State.HUNGRY -> {
         if (!hasLeftFork) {
           leftPending = true
-          println("TRACE: [Node $numericId] requestLeftFork HUNGRY no fork -> pending")
         }
         if (hasLeftFork && !leftForkDirty) {
           leftPending = true
-          println("TRACE: [Node $numericId] requestLeftFork HUNGRY clean -> pending")
         }
         if (hasLeftFork && leftForkDirty) {
           hasLeftFork = false
-          println(
-            "TRACE: [Node $numericId] requestLeftFork HUNGRY dirty -> SEND giveRightFork -> $leftNeighbor"
-          )
+
           client
             .publishEvent(
               "pubsub",
@@ -290,9 +276,7 @@ class PhilosopherActorImpl(
         }
         if (hasLeftFork && leftForkDirty) {
           hasLeftFork = false
-          println(
-            "TRACE: [Node $numericId] requestLeftFork THINKING dirty -> SEND giveRightFork -> $leftNeighbor"
-          )
+
           client
             .publishEvent(
               "pubsub",
@@ -307,26 +291,21 @@ class PhilosopherActorImpl(
 
   override fun onRequestRightFork(data: Map<String, Any>) {
     recordLatency(data)
-    println("TRACE: [Node $numericId] RECV requestRightFork state=$state ${stateSnapshot()}")
+
     when (state) {
       State.INACTIVE -> {
-        println("TRACE: [Node $numericId] requestRightFork INACTIVE -> buffering early request")
         rightPending = true
       }
       State.HUNGRY -> {
         if (!hasRightFork) {
           rightPending = true
-          println("TRACE: [Node $numericId] requestRightFork HUNGRY no fork -> pending")
         }
         if (hasRightFork && !rightForkDirty) {
           rightPending = true
-          println("TRACE: [Node $numericId] requestRightFork HUNGRY clean -> pending")
         }
         if (hasRightFork && rightForkDirty) {
           hasRightFork = false
-          println(
-            "TRACE: [Node $numericId] requestRightFork HUNGRY dirty -> SEND giveLeftFork -> $rightNeighbor"
-          )
+
           client
             .publishEvent(
               "pubsub",
@@ -349,9 +328,7 @@ class PhilosopherActorImpl(
         }
         if (hasRightFork && rightForkDirty) {
           hasRightFork = false
-          println(
-            "TRACE: [Node $numericId] requestRightFork THINKING dirty -> SEND giveLeftFork -> $rightNeighbor"
-          )
+
           client
             .publishEvent(
               "pubsub",
@@ -367,9 +344,7 @@ class PhilosopherActorImpl(
   override fun onJoin(data: Map<String, Any>) {
     recordLatency(data)
     val newRightNeighbor = data["id"].toString()
-    println(
-      "TRACE: [Node $numericId] RECV join newRight=$newRightNeighbor state=$state ${stateSnapshot()}"
-    )
+
     rightNeighbor = newRightNeighbor
     hasRightFork = false
     rightRequested = false
