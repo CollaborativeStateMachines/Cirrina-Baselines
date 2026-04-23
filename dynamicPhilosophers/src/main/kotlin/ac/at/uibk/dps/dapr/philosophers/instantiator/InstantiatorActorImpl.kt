@@ -33,7 +33,7 @@ class InstantiatorActorImpl(
     state = State.WAIT
 
     if (count == 0) {
-      count = n // Your specified high count
+      count = n
       timer()
     }
   }
