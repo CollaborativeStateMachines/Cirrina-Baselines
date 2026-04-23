@@ -15,18 +15,15 @@ import org.springframework.web.bind.annotation.RestController
 class DynamicPhilosophersPubSub {
   private val id = System.getenv("RUNTIME_ID").toInt()
   private val n = 12
-  private var instances = mutableListOf<PhilosopherActor>()
-
   private val actorClient = ActorClient()
   private val philosopherProxyBuilder = ActorProxyBuilder(PhilosopherActor::class.java, actorClient)
-  val instantiatorPoxy: InstantiatorActor =
+  val instantiatorProxy: InstantiatorActor =
     ActorProxyBuilder(InstantiatorActor::class.java, actorClient).build(ActorId("instantiator$id"))
 
   @Topic(name = "giveLeftFork", pubsubName = "pubsub")
   @PostMapping("/giveLeftFork")
   fun giveLeftForkSubscriber(@RequestBody event: CloudEvent<Map<String, Any>>) {
     val actorNumber = event.data["target"].toString().filter { it.isDigit() }.toInt()
-
     if ((actorNumber % n) == id) {
       philosopherProxyBuilder
         .build(ActorId((event.data["target"].toString())))
@@ -38,7 +35,6 @@ class DynamicPhilosophersPubSub {
   @PostMapping("/giveRightFork")
   fun giveRightForkSubscriber(@RequestBody event: CloudEvent<Map<String, Any>>) {
     val actorNumber = event.data["target"].toString().filter { it.isDigit() }.toInt()
-
     if ((actorNumber % n) == id) {
       philosopherProxyBuilder
         .build(ActorId((event.data["target"].toString())))
@@ -73,9 +69,9 @@ class DynamicPhilosophersPubSub {
   @Topic(name = "join", pubsubName = "pubsub")
   @PostMapping("/join")
   fun joinSubscriber(@RequestBody event: CloudEvent<Map<String, Any>>) {
-    instantiatorPoxy.onJoin(event.data)
-    for (instance in instances) {
-      instance.onJoin(event.data)
+    val actorNumber = event.data["target"].toString().filter { it.isDigit() }.toInt()
+    if ((actorNumber % n) == id) {
+      philosopherProxyBuilder.build(ActorId((event.data["target"].toString()))).onJoin(event.data)
     }
   }
 
@@ -83,11 +79,15 @@ class DynamicPhilosophersPubSub {
   @PostMapping("/instantiate")
   fun instantiateSubscriber(@RequestBody event: CloudEvent<Map<String, Any>>) {
     val actorNumber = event.data["id"].toString().filter { it.isDigit() }.toInt()
-
     if ((actorNumber % n) == id) {
       val instance = philosopherProxyBuilder.build(ActorId((event.data["id"].toString())))
-      instances.add(instance)
       instance.onInstantiate(event.data)
     }
+  }
+
+  @Topic(name = "nodeCreated", pubsubName = "pubsub")
+  @PostMapping("/nodeCreated")
+  fun nodeCreatedSubscriber(@RequestBody event: CloudEvent<Map<String, Any>>) {
+    instantiatorProxy.onNodeCreated(event.data)
   }
 }
