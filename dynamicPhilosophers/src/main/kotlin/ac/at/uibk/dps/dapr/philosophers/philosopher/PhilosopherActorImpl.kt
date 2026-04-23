@@ -11,7 +11,6 @@ import java.time.Duration
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
 import kotlin.time.Clock
-import reactor.core.publisher.Mono
 
 class PhilosopherActorImpl(
   runtimeContext: ActorRuntimeContext<PhilosopherActorImpl>,
@@ -68,15 +67,21 @@ class PhilosopherActorImpl(
     rightNeighbor = data["rightNeighbor"]?.toString() ?: "none"
 
     hasLeftFork = hasLeftFork || (data["hasLeftFork"]?.toString()?.toBooleanStrictOrNull() ?: false)
-    hasRightFork = hasRightFork || (data["hasRightFork"]?.toString()?.toBooleanStrictOrNull() ?: false)
+    hasRightFork =
+      hasRightFork || (data["hasRightFork"]?.toString()?.toBooleanStrictOrNull() ?: false)
 
-    leftForkDirty = leftForkDirty && (data["leftForkDirty"]?.toString()?.toBooleanStrictOrNull() ?: true)
-    rightForkDirty = rightForkDirty && (data["rightForkDirty"]?.toString()?.toBooleanStrictOrNull() ?: true)
+    leftForkDirty =
+      leftForkDirty && (data["leftForkDirty"]?.toString()?.toBooleanStrictOrNull() ?: true)
+    rightForkDirty =
+      rightForkDirty && (data["rightForkDirty"]?.toString()?.toBooleanStrictOrNull() ?: true)
 
-    leftRequested = leftRequested || (data["leftRequested"]?.toString()?.toBooleanStrictOrNull() ?: false)
-    rightRequested = rightRequested || (data["rightRequested"]?.toString()?.toBooleanStrictOrNull() ?: false)
+    leftRequested =
+      leftRequested || (data["leftRequested"]?.toString()?.toBooleanStrictOrNull() ?: false)
+    rightRequested =
+      rightRequested || (data["rightRequested"]?.toString()?.toBooleanStrictOrNull() ?: false)
     leftPending = leftPending || (data["leftPending"]?.toString()?.toBooleanStrictOrNull() ?: false)
-    rightPending = rightPending || (data["rightPending"]?.toString()?.toBooleanStrictOrNull() ?: false)
+    rightPending =
+      rightPending || (data["rightPending"]?.toString()?.toBooleanStrictOrNull() ?: false)
 
     hungry()
   }
@@ -123,12 +128,12 @@ class PhilosopherActorImpl(
   private fun eating() {
     state = State.EATING
     this.registerActorTimer(
-      "eating",
-      "ate",
-      ByteArray(0),
-      Duration.ofMillis(randomAround(10, 2).toLong()),
-      Duration.ofMillis(-1),
-    )
+        "eating",
+        "ate",
+        ByteArray(0),
+        Duration.ofMillis(randomAround(10, 2).toLong()),
+        Duration.ofMillis(-1),
+      )
       .subscribe()
   }
 
@@ -173,12 +178,12 @@ class PhilosopherActorImpl(
   private fun thinking() {
     state = State.THINKING
     this.registerActorTimer(
-      "thinking",
-      "thought",
-      ByteArray(0),
-      Duration.ofMillis(randomAround(10, 2).toLong()),
-      Duration.ofMillis(-1),
-    )
+        "thinking",
+        "thought",
+        ByteArray(0),
+        Duration.ofMillis(randomAround(10, 2).toLong()),
+        Duration.ofMillis(-1),
+      )
       .subscribe()
   }
 
