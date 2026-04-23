@@ -25,14 +25,9 @@ class DynamicPhilosophersPubSub {
   fun giveLeftForkSubscriber(@RequestBody event: CloudEvent<Map<String, Any>>) {
     val actorNumber = event.data["target"].toString().filter { it.isDigit() }.toInt()
     if ((actorNumber % n) == id) {
-      try {
-        philosopherProxyBuilder
-          .build(ActorId((event.data["target"].toString())))
-          .onGiveLeftFork(event.data)
-      } catch (e: Exception) {
-        println("ERROR: [PubSub] giveLeftFork to ${event.data["target"]} failed: ${e.message}")
-        throw e
-      }
+      philosopherProxyBuilder
+        .build(ActorId((event.data["target"].toString())))
+        .onGiveLeftFork(event.data)
     }
   }
 
@@ -41,14 +36,9 @@ class DynamicPhilosophersPubSub {
   fun giveRightForkSubscriber(@RequestBody event: CloudEvent<Map<String, Any>>) {
     val actorNumber = event.data["target"].toString().filter { it.isDigit() }.toInt()
     if ((actorNumber % n) == id) {
-      try {
-        philosopherProxyBuilder
-          .build(ActorId((event.data["target"].toString())))
-          .onGiveRightFork(event.data)
-      } catch (e: Exception) {
-        println("ERROR: [PubSub] giveRightFork to ${event.data["target"]} failed: ${e.message}")
-        throw e
-      }
+      philosopherProxyBuilder
+        .build(ActorId((event.data["target"].toString())))
+        .onGiveRightFork(event.data)
     }
   }
 
@@ -58,14 +48,9 @@ class DynamicPhilosophersPubSub {
     val actorNumber = event.data["target"].toString().filter { it.isDigit() }.toInt()
 
     if ((actorNumber % n) == id) {
-      try {
-        philosopherProxyBuilder
-          .build(ActorId((event.data["target"].toString())))
-          .onRequestLeftFork(event.data)
-      } catch (e: Exception) {
-        println("ERROR: [PubSub] requestLeftFork to ${event.data["target"]} failed: ${e.message}")
-        throw e
-      }
+      philosopherProxyBuilder
+        .build(ActorId((event.data["target"].toString())))
+        .onRequestLeftFork(event.data)
     }
   }
 
@@ -75,14 +60,9 @@ class DynamicPhilosophersPubSub {
     val actorNumber = event.data["target"].toString().filter { it.isDigit() }.toInt()
 
     if ((actorNumber % n) == id) {
-      try {
-        philosopherProxyBuilder
-          .build(ActorId((event.data["target"].toString())))
-          .onRequestRightFork(event.data)
-      } catch (e: Exception) {
-        println("ERROR: [PubSub] requestRightFork to ${event.data["target"]} failed: ${e.message}")
-        throw e
-      }
+      philosopherProxyBuilder
+        .build(ActorId((event.data["target"].toString())))
+        .onRequestRightFork(event.data)
     }
   }
 
@@ -91,12 +71,7 @@ class DynamicPhilosophersPubSub {
   fun joinSubscriber(@RequestBody event: CloudEvent<Map<String, Any>>) {
     val actorNumber = event.data["target"].toString().filter { it.isDigit() }.toInt()
     if ((actorNumber % n) == id) {
-      try {
-        philosopherProxyBuilder.build(ActorId((event.data["target"].toString()))).onJoin(event.data)
-      } catch (e: Exception) {
-        println("ERROR: [PubSub] join to ${event.data["target"]} failed: ${e.message}")
-        throw e
-      }
+      philosopherProxyBuilder.build(ActorId((event.data["target"].toString()))).onJoin(event.data)
     }
   }
 
@@ -105,24 +80,14 @@ class DynamicPhilosophersPubSub {
   fun instantiateSubscriber(@RequestBody event: CloudEvent<Map<String, Any>>) {
     val actorNumber = event.data["id"].toString().filter { it.isDigit() }.toInt()
     if ((actorNumber % n) == id) {
-      try {
-        val instance = philosopherProxyBuilder.build(ActorId((event.data["id"].toString())))
-        instance.onInstantiate(event.data)
-      } catch (e: Exception) {
-        println("ERROR: [PubSub] instantiate ${event.data["id"]} failed: ${e.message}")
-        throw e
-      }
+      val instance = philosopherProxyBuilder.build(ActorId((event.data["id"].toString())))
+      instance.onInstantiate(event.data)
     }
   }
 
   @Topic(name = "nodeCreated", pubsubName = "pubsub")
   @PostMapping("/nodeCreated")
   fun nodeCreatedSubscriber(@RequestBody event: CloudEvent<Map<String, Any>>) {
-    try {
-      instantiatorProxy.onNodeCreated(event.data)
-    } catch (e: Exception) {
-      println("ERROR: [PubSub] nodeCreated failed: ${e.message}")
-      throw e
-    }
+    instantiatorProxy.onNodeCreated(event.data)
   }
 }

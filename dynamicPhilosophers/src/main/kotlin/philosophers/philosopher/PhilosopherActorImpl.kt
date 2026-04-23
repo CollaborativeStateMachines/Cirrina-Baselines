@@ -104,7 +104,7 @@ class PhilosopherActorImpl(
           "requestRightFork",
           mapOf("target" to leftNeighbor, "time" to getNowNanos()),
         )
-        .subscribeSafely("publish requestRightFork to $leftNeighbor")
+        .subscribe()
     }
     if (rightNeighbor != "none" && !hasRightFork && !rightRequested) {
       rightRequested = true
@@ -115,7 +115,7 @@ class PhilosopherActorImpl(
           "requestLeftFork",
           mapOf("target" to rightNeighbor, "time" to getNowNanos()),
         )
-        .subscribeSafely("publish requestLeftFork to $rightNeighbor")
+        .subscribe()
     }
     tryEat()
   }
@@ -137,7 +137,7 @@ class PhilosopherActorImpl(
       Duration.ofMillis(randomAround(10, 2).toLong()),
       Duration.ofMillis(-1),
     )
-      .subscribeSafely("register eating timer")
+      .subscribe()
   }
 
   override fun ate() {
@@ -159,7 +159,7 @@ class PhilosopherActorImpl(
           "giveRightFork",
           mapOf("target" to leftNeighbor, "time" to getNowNanos()),
         )
-        .subscribeSafely("publish giveRightFork to $leftNeighbor")
+        .subscribe()
     }
 
     if (rightNeighbor != "none" && rightPending && hasRightFork) {
@@ -172,7 +172,7 @@ class PhilosopherActorImpl(
           "giveLeftFork",
           mapOf("target" to rightNeighbor, "time" to getNowNanos()),
         )
-        .subscribeSafely("publish giveLeftFork to $rightNeighbor")
+        .subscribe()
     }
 
     println("TRACE: [Node $numericId] ate#$meals -> thinking ${stateSnapshot()}")
@@ -188,7 +188,7 @@ class PhilosopherActorImpl(
       Duration.ofMillis(randomAround(10, 2).toLong()),
       Duration.ofMillis(-1),
     )
-      .subscribeSafely("register thinking timer")
+      .subscribe()
   }
 
   override fun thought() {
@@ -274,7 +274,7 @@ class PhilosopherActorImpl(
               "giveRightFork",
               mapOf("target" to leftNeighbor, "time" to getNowNanos()),
             )
-            .subscribeSafely("publish giveRightFork")
+            .subscribe()
           evaluateRequests()
         }
       }
@@ -299,7 +299,7 @@ class PhilosopherActorImpl(
               "giveRightFork",
               mapOf("target" to leftNeighbor, "time" to getNowNanos()),
             )
-            .subscribeSafely("publish giveRightFork")
+            .subscribe()
         }
       }
     }
@@ -333,7 +333,7 @@ class PhilosopherActorImpl(
               "giveLeftFork",
               mapOf("target" to rightNeighbor, "time" to getNowNanos()),
             )
-            .subscribeSafely("publish giveLeftFork")
+            .subscribe()
           evaluateRequests()
         }
       }
@@ -358,7 +358,7 @@ class PhilosopherActorImpl(
               "giveLeftFork",
               mapOf("target" to rightNeighbor, "time" to getNowNanos()),
             )
-            .subscribeSafely("publish giveLeftFork")
+            .subscribe()
         }
       }
     }
@@ -377,17 +377,6 @@ class PhilosopherActorImpl(
     if (state == State.HUNGRY) {
       evaluateRequests()
     }
-  }
-
-  private fun <T> Mono<T>.subscribeSafely(actionName: String) {
-    this.doOnError { e ->
-      println("WARN: [Node $numericId] $actionName error, retrying: ${e.message}")
-    }
-      .retry(3) // Retry up to 3 times for transient sidecar issues
-      .subscribe(
-        { /* Success - no operation needed for Mono<Void> */ },
-        { e -> println("FATAL: [Node $numericId] $actionName failed permanently: ${e.message}") },
-      )
   }
 
   fun randomAround(base: Int, delta: Int): Int {
