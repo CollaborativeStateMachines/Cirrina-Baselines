@@ -196,8 +196,8 @@ class PhilosopherActorImpl(
     recordLatency(data)
 
     when (state) {
+      // Workaround for out of order event processing
       State.INACTIVE -> {
-
         hasLeftFork = true
         leftForkDirty = false
         leftRequested = false
@@ -221,8 +221,8 @@ class PhilosopherActorImpl(
     recordLatency(data)
 
     when (state) {
+      // Workaround for out of order event processing
       State.INACTIVE -> {
-
         hasRightFork = true
         rightForkDirty = false
         rightRequested = false
@@ -246,10 +246,12 @@ class PhilosopherActorImpl(
     recordLatency(data)
 
     when (state) {
+      // Workaround for out of order event processing
       State.INACTIVE -> {
         leftPending = true
       }
       State.HUNGRY -> {
+        // Workaround for out of order event processing
         if (!hasLeftFork) {
           leftPending = true
         }
@@ -273,6 +275,7 @@ class PhilosopherActorImpl(
         leftPending = true
       }
       State.THINKING -> {
+        // Workaround for out of order event processing
         if (!hasLeftFork) {
           leftPending = true
         }
@@ -298,10 +301,12 @@ class PhilosopherActorImpl(
     recordLatency(data)
 
     when (state) {
+      // Workaround for out of order event processing
       State.INACTIVE -> {
         rightPending = true
       }
       State.HUNGRY -> {
+        // Workaround for out of order event processing
         if (!hasRightFork) {
           rightPending = true
         }
@@ -325,6 +330,7 @@ class PhilosopherActorImpl(
         rightPending = true
       }
       State.THINKING -> {
+        // Workaround for out of order event processing
         if (!hasRightFork) {
           rightPending = true
         }
