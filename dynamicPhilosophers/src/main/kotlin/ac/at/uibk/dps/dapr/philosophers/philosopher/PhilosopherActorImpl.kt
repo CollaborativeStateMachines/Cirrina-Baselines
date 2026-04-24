@@ -69,12 +69,10 @@ class PhilosopherActorImpl(
     hasLeftFork = hasLeftFork || (data["hasLeftFork"]?.toString()?.toBooleanStrictOrNull() ?: false)
     hasRightFork =
       hasRightFork || (data["hasRightFork"]?.toString()?.toBooleanStrictOrNull() ?: false)
-
     leftForkDirty =
       leftForkDirty && (data["leftForkDirty"]?.toString()?.toBooleanStrictOrNull() ?: true)
     rightForkDirty =
       rightForkDirty && (data["rightForkDirty"]?.toString()?.toBooleanStrictOrNull() ?: true)
-
     leftRequested =
       leftRequested || (data["leftRequested"]?.toString()?.toBooleanStrictOrNull() ?: false)
     rightRequested =
@@ -94,7 +92,6 @@ class PhilosopherActorImpl(
   private fun evaluateRequests() {
     if (leftNeighbor != "none" && !hasLeftFork && !leftRequested) {
       leftRequested = true
-
       client
         .publishEvent(
           "pubsub",
@@ -105,7 +102,6 @@ class PhilosopherActorImpl(
     }
     if (rightNeighbor != "none" && !hasRightFork && !rightRequested) {
       rightRequested = true
-
       client
         .publishEvent(
           "pubsub",
@@ -143,17 +139,14 @@ class PhilosopherActorImpl(
 
   override fun ate() {
     if (this.state != State.EATING) return
-
     ++meals
     metricsRegistry.counter("philosopher.meals.id=$id").inc()
-
     leftForkDirty = true
     rightForkDirty = true
 
     if (leftNeighbor != "none" && leftPending && hasLeftFork) {
       hasLeftFork = false
       leftPending = false
-
       client
         .publishEvent(
           "pubsub",
@@ -162,11 +155,9 @@ class PhilosopherActorImpl(
         )
         .subscribe()
     }
-
     if (rightNeighbor != "none" && rightPending && hasRightFork) {
       hasRightFork = false
       rightPending = false
-
       client
         .publishEvent(
           "pubsub",
@@ -175,7 +166,6 @@ class PhilosopherActorImpl(
         )
         .subscribe()
     }
-
     thinking()
   }
 
@@ -198,13 +188,7 @@ class PhilosopherActorImpl(
 
   override fun onGiveLeftFork(data: Map<String, Any>) {
     recordLatency(data)
-
     when (state) {
-      State.INACTIVE -> {
-        hasLeftFork = true
-        leftForkDirty = false
-        leftRequested = false
-      }
       State.HUNGRY -> {
         hasLeftFork = true
         leftForkDirty = false
@@ -222,13 +206,7 @@ class PhilosopherActorImpl(
 
   override fun onGiveRightFork(data: Map<String, Any>) {
     recordLatency(data)
-
     when (state) {
-      State.INACTIVE -> {
-        hasRightFork = true
-        rightForkDirty = false
-        rightRequested = false
-      }
       State.HUNGRY -> {
         hasRightFork = true
         rightForkDirty = false
@@ -246,11 +224,7 @@ class PhilosopherActorImpl(
 
   override fun onRequestLeftFork(data: Map<String, Any>) {
     recordLatency(data)
-
     when (state) {
-      State.INACTIVE -> {
-        leftPending = true
-      }
       State.HUNGRY -> {
         if (hasLeftFork && leftForkDirty) {
           hasLeftFork = false
@@ -285,16 +259,13 @@ class PhilosopherActorImpl(
           leftPending = true
         }
       }
+      else -> {}
     }
   }
 
   override fun onRequestRightFork(data: Map<String, Any>) {
     recordLatency(data)
-
     when (state) {
-      State.INACTIVE -> {
-        rightPending = true
-      }
       State.HUNGRY -> {
         if (hasRightFork && rightForkDirty) {
           hasRightFork = false
@@ -329,14 +300,13 @@ class PhilosopherActorImpl(
           rightPending = true
         }
       }
+      else -> {}
     }
   }
 
   override fun onJoin(data: Map<String, Any>) {
     recordLatency(data)
-    val newRightNeighbor = data["id"].toString()
-
-    rightNeighbor = newRightNeighbor
+    rightNeighbor = data["id"].toString()
     hasRightFork = true
     rightForkDirty = true
 
@@ -351,13 +321,9 @@ class PhilosopherActorImpl(
         )
         .subscribe()
     }
-
-    if (state == State.HUNGRY) {
-      evaluateRequests()
-    }
+    if (state == State.HUNGRY) evaluateRequests()
   }
 
-  fun randomAround(base: Int, delta: Int): Int {
-    return (base - delta..base + delta).random(threadRng.get())
-  }
+  fun randomAround(base: Int, delta: Int): Int =
+    (base - delta..base + delta).random(threadRng.get())
 }
