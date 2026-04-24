@@ -9,7 +9,6 @@ import io.dapr.client.DaprClientBuilder
 import java.security.SecureRandom
 import java.time.Duration
 import java.util.concurrent.TimeUnit
-import java.util.logging.Logger
 import kotlin.random.Random
 import kotlin.time.Clock
 
@@ -20,7 +19,6 @@ class PhilosopherActorImpl(
 
   companion object {
     private val client: DaprClient = DaprClientBuilder().build()
-    private val logger = Logger.getLogger(PhilosopherActorImpl::class.java.name)
   }
 
   enum class State {
@@ -90,20 +88,13 @@ class PhilosopherActorImpl(
 
   override fun hungry() {
     state = State.HUNGRY
-    logger.info(
-      "TRACE: [$id] entry hungry L=$hasLeftFork(d=$leftForkDirty,p=$leftPending) R=$hasRightFork(d=$rightForkDirty,p=$rightPending)"
-    )
     evaluateRequests()
   }
 
   private fun evaluateRequests() {
-    logger.info(
-      "TRACE: [$id] evaluateRequests L=$hasLeftFork(p=$leftPending) R=$hasRightFork(p=$rightPending)"
-    )
-
     if (leftNeighbor != "none" && !hasLeftFork && !leftRequested) {
       leftRequested = true
-      logger.info("TRACE: [$id] SEND requestRightFork -> $leftNeighbor")
+
       client
         .publishEvent(
           "pubsub",
@@ -114,7 +105,7 @@ class PhilosopherActorImpl(
     }
     if (rightNeighbor != "none" && !hasRightFork && !rightRequested) {
       rightRequested = true
-      logger.info("TRACE: [$id] SEND requestLeftFork -> $rightNeighbor")
+
       client
         .publishEvent(
           "pubsub",
@@ -155,15 +146,14 @@ class PhilosopherActorImpl(
 
     ++meals
     metricsRegistry.counter("philosopher.meals.id=$id").inc()
-    logger.info("TRACE: [$id] ate#$meals -> thinking")
 
     leftForkDirty = true
     rightForkDirty = true
 
     if (leftNeighbor != "none" && leftPending && hasLeftFork) {
-      logger.info("TRACE: [$id] ate#$meals: Fulfilling pending Left request")
       hasLeftFork = false
       leftPending = false
+
       client
         .publishEvent(
           "pubsub",
@@ -174,9 +164,9 @@ class PhilosopherActorImpl(
     }
 
     if (rightNeighbor != "none" && rightPending && hasRightFork) {
-      logger.info("TRACE: [$id] ate#$meals: Fulfilling pending Right request")
       hasRightFork = false
       rightPending = false
+
       client
         .publishEvent(
           "pubsub",
@@ -208,7 +198,6 @@ class PhilosopherActorImpl(
 
   override fun onGiveLeftFork(data: Map<String, Any>) {
     recordLatency(data)
-    logger.info("TRACE: [$id] RECV giveLeftFork (Clean)")
 
     when (state) {
       State.INACTIVE -> {
@@ -233,7 +222,6 @@ class PhilosopherActorImpl(
 
   override fun onGiveRightFork(data: Map<String, Any>) {
     recordLatency(data)
-    logger.info("TRACE: [$id] RECV giveRightFork (Clean)")
 
     when (state) {
       State.INACTIVE -> {
@@ -265,9 +253,6 @@ class PhilosopherActorImpl(
       }
       State.HUNGRY -> {
         if (hasLeftFork && leftForkDirty) {
-          logger.info(
-            "TRACE: [$id] RECV requestLeftFork: Yielding Dirty Left Fork to $leftNeighbor"
-          )
           hasLeftFork = false
           leftPending = false
           client
@@ -279,17 +264,14 @@ class PhilosopherActorImpl(
             .subscribe()
           evaluateRequests()
         } else {
-          logger.info("TRACE: [$id] RECV requestLeftFork: Buffering (Pending=true)")
           leftPending = true
         }
       }
       State.EATING -> {
-        logger.info("TRACE: [$id] RECV requestLeftFork (Eating)")
         leftPending = true
       }
       State.THINKING -> {
         if (hasLeftFork) {
-          logger.info("TRACE: [$id] RECV requestLeftFork (Thinking): Yielding")
           hasLeftFork = false
           leftPending = false
           client
@@ -300,7 +282,6 @@ class PhilosopherActorImpl(
             )
             .subscribe()
         } else {
-          logger.info("TRACE: [$id] RECV requestLeftFork (Thinking): Buffering")
           leftPending = true
         }
       }
@@ -316,9 +297,6 @@ class PhilosopherActorImpl(
       }
       State.HUNGRY -> {
         if (hasRightFork && rightForkDirty) {
-          logger.info(
-            "TRACE: [$id] RECV requestRightFork: Yielding Dirty Right Fork to $rightNeighbor"
-          )
           hasRightFork = false
           rightPending = false
           client
@@ -330,17 +308,14 @@ class PhilosopherActorImpl(
             .subscribe()
           evaluateRequests()
         } else {
-          logger.info("TRACE: [$id] RECV requestRightFork: Buffering (Pending=true)")
           rightPending = true
         }
       }
       State.EATING -> {
-        logger.info("TRACE: [$id] RECV requestRightFork (Eating)")
         rightPending = true
       }
       State.THINKING -> {
         if (hasRightFork) {
-          logger.info("TRACE: [$id] RECV requestRightFork (Thinking): Yielding")
           hasRightFork = false
           rightPending = false
           client
@@ -351,7 +326,6 @@ class PhilosopherActorImpl(
             )
             .subscribe()
         } else {
-          logger.info("TRACE: [$id] RECV requestRightFork (Thinking): Buffering")
           rightPending = true
         }
       }
@@ -361,14 +335,12 @@ class PhilosopherActorImpl(
   override fun onJoin(data: Map<String, Any>) {
     recordLatency(data)
     val newRightNeighbor = data["id"].toString()
-    logger.info("TRACE: [$id] RECV join (${state.name}) rn=$newRightNeighbor")
 
     rightNeighbor = newRightNeighbor
     hasRightFork = true
     rightForkDirty = true
 
     if (rightPending) {
-      logger.info("TRACE: [$id] Join: Satisfying early buffered request for $rightNeighbor")
       hasRightFork = false
       rightPending = false
       client
