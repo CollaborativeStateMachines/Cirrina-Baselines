@@ -22,6 +22,7 @@ class InstantiatorActorImpl(
 
   private val client: DaprClient = DaprClientBuilder().build()
   val metricsRegistry = DynamicPhilosophers.provideMetricRegistry()
+
   private var state = State.WAIT
   val n = 12
   val id = System.getenv("RUNTIME_ID").toInt()
@@ -39,9 +40,11 @@ class InstantiatorActorImpl(
   override fun onNodeCreated(data: Map<String, Any>) {
     val now = Clock.System.now()
     val nowNanos = (now.epochSeconds * 1_000_000_000L) + now.nanosecondsOfSecond
+
     metricsRegistry
-      .timer("event.latency")!!
+      .timer("event.latency")
       .update((nowNanos - (data["time"] as? Long ?: 0L)).coerceAtLeast(0L), TimeUnit.NANOSECONDS)
+
     if (state == State.WAIT) {
       --count
       waitTurn()
@@ -50,6 +53,7 @@ class InstantiatorActorImpl(
 
   private fun timer() {
     state = State.INSTANTIATE
+
     this.registerActorTimer(
         "instantiate",
         "instantiate",
@@ -62,9 +66,11 @@ class InstantiatorActorImpl(
 
   override fun instantiate() {
     if (this.state != State.INSTANTIATE) return
+
+    val leftNeighbor = if (lastInstantiated == 0) "none" else "instantiated${lastInstantiated - 1}"
+
     val nowNanos =
       (Clock.System.now().epochSeconds * 1_000_000_000L) + Clock.System.now().nanosecondsOfSecond
-    val leftNeighbor = if (lastInstantiated == 0) "none" else "instantiated${lastInstantiated - 1}"
 
     client
       .publishEvent(
@@ -102,6 +108,7 @@ class InstantiatorActorImpl(
     }
 
     client.publishEvent("pubsub", "nodeCreated", mapOf("time" to nowNanos)).subscribe()
+
     lastInstantiated += n
     waitTurn()
   }

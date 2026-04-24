@@ -63,6 +63,7 @@ class PhilosopherActorImpl(
 
   override fun onInstantiate(data: Map<String, Any>) {
     recordLatency(data)
+
     leftNeighbor = data["leftNeighbor"]?.toString() ?: "none"
     rightNeighbor = data["rightNeighbor"]?.toString() ?: "none"
 
@@ -92,6 +93,7 @@ class PhilosopherActorImpl(
   private fun evaluateRequests() {
     if (leftNeighbor != "none" && !hasLeftFork && !leftRequested) {
       leftRequested = true
+
       client
         .publishEvent(
           "pubsub",
@@ -102,6 +104,7 @@ class PhilosopherActorImpl(
     }
     if (rightNeighbor != "none" && !hasRightFork && !rightRequested) {
       rightRequested = true
+
       client
         .publishEvent(
           "pubsub",
@@ -127,6 +130,7 @@ class PhilosopherActorImpl(
 
   private fun eating() {
     state = State.EATING
+
     this.registerActorTimer(
         "eating",
         "ate",
@@ -147,6 +151,7 @@ class PhilosopherActorImpl(
     if (leftNeighbor != "none" && leftPending && hasLeftFork) {
       hasLeftFork = false
       leftPending = false
+
       client
         .publishEvent(
           "pubsub",
@@ -158,6 +163,7 @@ class PhilosopherActorImpl(
     if (rightNeighbor != "none" && rightPending && hasRightFork) {
       hasRightFork = false
       rightPending = false
+
       client
         .publishEvent(
           "pubsub",
@@ -171,6 +177,7 @@ class PhilosopherActorImpl(
 
   private fun thinking() {
     state = State.THINKING
+
     this.registerActorTimer(
         "thinking",
         "thought",
@@ -188,11 +195,13 @@ class PhilosopherActorImpl(
 
   override fun onGiveLeftFork(data: Map<String, Any>) {
     recordLatency(data)
+
     when (state) {
       State.HUNGRY -> {
         hasLeftFork = true
         leftForkDirty = false
         leftRequested = false
+
         tryEat()
       }
       State.THINKING -> {
@@ -206,11 +215,13 @@ class PhilosopherActorImpl(
 
   override fun onGiveRightFork(data: Map<String, Any>) {
     recordLatency(data)
+
     when (state) {
       State.HUNGRY -> {
         hasRightFork = true
         rightForkDirty = false
         rightRequested = false
+
         tryEat()
       }
       State.THINKING -> {
@@ -224,11 +235,13 @@ class PhilosopherActorImpl(
 
   override fun onRequestLeftFork(data: Map<String, Any>) {
     recordLatency(data)
+
     when (state) {
       State.HUNGRY -> {
         if (hasLeftFork && leftForkDirty) {
           hasLeftFork = false
           leftPending = false
+
           client
             .publishEvent(
               "pubsub",
@@ -236,6 +249,7 @@ class PhilosopherActorImpl(
               mapOf("target" to leftNeighbor, "time" to getNowNanos()),
             )
             .subscribe()
+
           evaluateRequests()
         } else {
           leftPending = true
@@ -248,6 +262,7 @@ class PhilosopherActorImpl(
         if (hasLeftFork) {
           hasLeftFork = false
           leftPending = false
+
           client
             .publishEvent(
               "pubsub",
@@ -265,11 +280,13 @@ class PhilosopherActorImpl(
 
   override fun onRequestRightFork(data: Map<String, Any>) {
     recordLatency(data)
+
     when (state) {
       State.HUNGRY -> {
         if (hasRightFork && rightForkDirty) {
           hasRightFork = false
           rightPending = false
+
           client
             .publishEvent(
               "pubsub",
@@ -277,6 +294,7 @@ class PhilosopherActorImpl(
               mapOf("target" to rightNeighbor, "time" to getNowNanos()),
             )
             .subscribe()
+
           evaluateRequests()
         } else {
           rightPending = true
@@ -289,6 +307,7 @@ class PhilosopherActorImpl(
         if (hasRightFork) {
           hasRightFork = false
           rightPending = false
+
           client
             .publishEvent(
               "pubsub",
@@ -306,6 +325,7 @@ class PhilosopherActorImpl(
 
   override fun onJoin(data: Map<String, Any>) {
     recordLatency(data)
+
     rightNeighbor = data["id"].toString()
     hasRightFork = true
     rightForkDirty = true
@@ -313,6 +333,7 @@ class PhilosopherActorImpl(
     if (rightPending) {
       hasRightFork = false
       rightPending = false
+
       client
         .publishEvent(
           "pubsub",
