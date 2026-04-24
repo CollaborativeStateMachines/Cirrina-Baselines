@@ -8,12 +8,17 @@ import io.dapr.client.DaprClient
 import io.dapr.client.DaprClientBuilder
 import java.time.Duration
 import java.util.concurrent.TimeUnit
+import java.util.logging.Logger
 import kotlin.time.Clock
 
 class InstantiatorActorImpl(
   runtimeContext: ActorRuntimeContext<InstantiatorActorImpl>,
   actorId: ActorId,
 ) : AbstractActor(runtimeContext, actorId), InstantiatorActor {
+
+  companion object {
+    private val logger = Logger.getLogger(InstantiatorActorImpl::class.java.name)
+  }
 
   enum class State {
     WAIT,
@@ -73,6 +78,10 @@ class InstantiatorActorImpl(
 
     val leftNeighbor = if (lastInstantiated == 0) "none" else "instantiated${lastInstantiated - 1}"
 
+    logger.info(
+      "TRACE: [Instantiator] Instantiating node $lastInstantiated with leftNeighbor=$leftNeighbor"
+    )
+
     client
       .publishEvent(
         "pubsub",
@@ -81,7 +90,7 @@ class InstantiatorActorImpl(
           "id" to "instantiated$lastInstantiated",
           "leftNeighbor" to leftNeighbor,
           "rightNeighbor" to "none",
-          "hasLeftFork" to (lastInstantiated > 0).toString(),
+          "hasLeftFork" to "false",
           "hasRightFork" to "false",
           "leftForkDirty" to "true",
           "rightForkDirty" to "true",
@@ -95,6 +104,7 @@ class InstantiatorActorImpl(
       .subscribe()
 
     if (lastInstantiated > 0) {
+      logger.info("TRACE: [Instantiator] Sending join event to instantiated${lastInstantiated - 1}")
       client
         .publishEvent(
           "pubsub",
