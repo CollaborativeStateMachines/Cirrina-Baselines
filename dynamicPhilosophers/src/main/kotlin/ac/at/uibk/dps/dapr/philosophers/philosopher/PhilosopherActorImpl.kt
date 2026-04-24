@@ -63,18 +63,17 @@ class PhilosopherActorImpl(
 
   override fun onInstantiate(data: Map<String, Any>) {
     recordLatency(data)
+
     leftNeighbor = data["leftNeighbor"]?.toString() ?: "none"
     rightNeighbor = data["rightNeighbor"]?.toString() ?: "none"
 
     hasLeftFork = hasLeftFork || (data["hasLeftFork"]?.toString()?.toBooleanStrictOrNull() ?: false)
     hasRightFork =
       hasRightFork || (data["hasRightFork"]?.toString()?.toBooleanStrictOrNull() ?: false)
-
     leftForkDirty =
       leftForkDirty && (data["leftForkDirty"]?.toString()?.toBooleanStrictOrNull() ?: true)
     rightForkDirty =
       rightForkDirty && (data["rightForkDirty"]?.toString()?.toBooleanStrictOrNull() ?: true)
-
     leftRequested =
       leftRequested || (data["leftRequested"]?.toString()?.toBooleanStrictOrNull() ?: false)
     rightRequested =
@@ -118,7 +117,11 @@ class PhilosopherActorImpl(
   }
 
   private fun tryEat() {
-    if ((leftNeighbor == "none" || hasLeftFork) && (rightNeighbor == "none" || hasRightFork)) {
+    if (
+      (leftNeighbor == "none" || hasLeftFork) &&
+        (rightNeighbor == "none" || hasRightFork) &&
+        !(leftNeighbor == "none" && rightNeighbor == "none")
+    ) {
       if (state != State.EATING) {
         eating()
       }
@@ -127,6 +130,7 @@ class PhilosopherActorImpl(
 
   private fun eating() {
     state = State.EATING
+
     this.registerActorTimer(
         "eating",
         "ate",
@@ -139,10 +143,8 @@ class PhilosopherActorImpl(
 
   override fun ate() {
     if (this.state != State.EATING) return
-
     ++meals
     metricsRegistry.counter("philosopher.meals.id=$id").inc()
-
     leftForkDirty = true
     rightForkDirty = true
 
@@ -158,7 +160,6 @@ class PhilosopherActorImpl(
         )
         .subscribe()
     }
-
     if (rightNeighbor != "none" && rightPending && hasRightFork) {
       hasRightFork = false
       rightPending = false
@@ -171,12 +172,12 @@ class PhilosopherActorImpl(
         )
         .subscribe()
     }
-
     thinking()
   }
 
   private fun thinking() {
     state = State.THINKING
+
     this.registerActorTimer(
         "thinking",
         "thought",
@@ -196,16 +197,11 @@ class PhilosopherActorImpl(
     recordLatency(data)
 
     when (state) {
-      // Workaround for out of order event processing
-      State.INACTIVE -> {
-        hasLeftFork = true
-        leftForkDirty = false
-        leftRequested = false
-      }
       State.HUNGRY -> {
         hasLeftFork = true
         leftForkDirty = false
         leftRequested = false
+
         tryEat()
       }
       State.THINKING -> {
@@ -221,16 +217,11 @@ class PhilosopherActorImpl(
     recordLatency(data)
 
     when (state) {
-      // Workaround for out of order event processing
-      State.INACTIVE -> {
-        hasRightFork = true
-        rightForkDirty = false
-        rightRequested = false
-      }
       State.HUNGRY -> {
         hasRightFork = true
         rightForkDirty = false
         rightRequested = false
+
         tryEat()
       }
       State.THINKING -> {
@@ -246,20 +237,10 @@ class PhilosopherActorImpl(
     recordLatency(data)
 
     when (state) {
-      // Workaround for out of order event processing
-      State.INACTIVE -> {
-        leftPending = true
-      }
       State.HUNGRY -> {
-        // Workaround for out of order event processing
-        if (!hasLeftFork) {
-          leftPending = true
-        }
-        if (hasLeftFork && !leftForkDirty) {
-          leftPending = true
-        }
         if (hasLeftFork && leftForkDirty) {
           hasLeftFork = false
+          leftPending = false
 
           client
             .publishEvent(
@@ -268,22 +249,19 @@ class PhilosopherActorImpl(
               mapOf("target" to leftNeighbor, "time" to getNowNanos()),
             )
             .subscribe()
+
           evaluateRequests()
+        } else {
+          leftPending = true
         }
       }
       State.EATING -> {
         leftPending = true
       }
       State.THINKING -> {
-        // Workaround for out of order event processing
-        if (!hasLeftFork) {
-          leftPending = true
-        }
-        if (hasLeftFork && !leftForkDirty) {
-          leftPending = true
-        }
-        if (hasLeftFork && leftForkDirty) {
+        if (hasLeftFork) {
           hasLeftFork = false
+          leftPending = false
 
           client
             .publishEvent(
@@ -292,8 +270,11 @@ class PhilosopherActorImpl(
               mapOf("target" to leftNeighbor, "time" to getNowNanos()),
             )
             .subscribe()
+        } else {
+          leftPending = true
         }
       }
+      else -> {}
     }
   }
 
@@ -301,20 +282,10 @@ class PhilosopherActorImpl(
     recordLatency(data)
 
     when (state) {
-      // Workaround for out of order event processing
-      State.INACTIVE -> {
-        rightPending = true
-      }
       State.HUNGRY -> {
-        // Workaround for out of order event processing
-        if (!hasRightFork) {
-          rightPending = true
-        }
-        if (hasRightFork && !rightForkDirty) {
-          rightPending = true
-        }
         if (hasRightFork && rightForkDirty) {
           hasRightFork = false
+          rightPending = false
 
           client
             .publishEvent(
@@ -323,22 +294,19 @@ class PhilosopherActorImpl(
               mapOf("target" to rightNeighbor, "time" to getNowNanos()),
             )
             .subscribe()
+
           evaluateRequests()
+        } else {
+          rightPending = true
         }
       }
       State.EATING -> {
         rightPending = true
       }
       State.THINKING -> {
-        // Workaround for out of order event processing
-        if (!hasRightFork) {
-          rightPending = true
-        }
-        if (hasRightFork && !rightForkDirty) {
-          rightPending = true
-        }
-        if (hasRightFork && rightForkDirty) {
+        if (hasRightFork) {
           hasRightFork = false
+          rightPending = false
 
           client
             .publishEvent(
@@ -347,25 +315,36 @@ class PhilosopherActorImpl(
               mapOf("target" to rightNeighbor, "time" to getNowNanos()),
             )
             .subscribe()
+        } else {
+          rightPending = true
         }
       }
+      else -> {}
     }
   }
 
   override fun onJoin(data: Map<String, Any>) {
     recordLatency(data)
-    val newRightNeighbor = data["id"].toString()
 
-    rightNeighbor = newRightNeighbor
-    hasRightFork = false
-    rightRequested = false
-    rightPending = false
-    if (state == State.HUNGRY) {
-      evaluateRequests()
+    rightNeighbor = data["id"].toString()
+    hasRightFork = true
+    rightForkDirty = true
+
+    if (rightPending) {
+      hasRightFork = false
+      rightPending = false
+
+      client
+        .publishEvent(
+          "pubsub",
+          "giveLeftFork",
+          mapOf("target" to rightNeighbor, "time" to getNowNanos()),
+        )
+        .subscribe()
     }
+    if (state == State.HUNGRY) evaluateRequests()
   }
 
-  fun randomAround(base: Int, delta: Int): Int {
-    return (base - delta..base + delta).random(threadRng.get())
-  }
+  fun randomAround(base: Int, delta: Int): Int =
+    (base - delta..base + delta).random(threadRng.get())
 }

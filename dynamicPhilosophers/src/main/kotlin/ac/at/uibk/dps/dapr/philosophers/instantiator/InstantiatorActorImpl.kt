@@ -31,7 +31,6 @@ class InstantiatorActorImpl(
 
   override fun waitTurn() {
     state = State.WAIT
-
     if (count == 0) {
       count = n
       timer()
@@ -41,9 +40,10 @@ class InstantiatorActorImpl(
   override fun onNodeCreated(data: Map<String, Any>) {
     val now = Clock.System.now()
     val nowNanos = (now.epochSeconds * 1_000_000_000L) + now.nanosecondsOfSecond
-    val deltaNanos = (nowNanos - (data["time"] as? Long ?: 0L)).coerceAtLeast(0L)
 
-    metricsRegistry.timer("event.latency")!!.update((deltaNanos), TimeUnit.NANOSECONDS)
+    metricsRegistry
+      .timer("event.latency")
+      .update((nowNanos - (data["time"] as? Long ?: 0L)).coerceAtLeast(0L), TimeUnit.NANOSECONDS)
 
     if (state == State.WAIT) {
       --count
@@ -53,6 +53,7 @@ class InstantiatorActorImpl(
 
   private fun timer() {
     state = State.INSTANTIATE
+
     this.registerActorTimer(
         "instantiate",
         "instantiate",
@@ -64,14 +65,12 @@ class InstantiatorActorImpl(
   }
 
   override fun instantiate() {
-    if (this.state != State.INSTANTIATE) {
-      return
-    }
-
-    val now = Clock.System.now()
-    val nowNanos = (now.epochSeconds * 1_000_000_000L) + now.nanosecondsOfSecond
+    if (this.state != State.INSTANTIATE) return
 
     val leftNeighbor = if (lastInstantiated == 0) "none" else "instantiated${lastInstantiated - 1}"
+
+    val nowNanos =
+      (Clock.System.now().epochSeconds * 1_000_000_000L) + Clock.System.now().nanosecondsOfSecond
 
     client
       .publishEvent(
@@ -81,7 +80,7 @@ class InstantiatorActorImpl(
           "id" to "instantiated$lastInstantiated",
           "leftNeighbor" to leftNeighbor,
           "rightNeighbor" to "none",
-          "hasLeftFork" to (lastInstantiated > 0).toString(),
+          "hasLeftFork" to "false",
           "hasRightFork" to "false",
           "leftForkDirty" to "true",
           "rightForkDirty" to "true",
@@ -110,11 +109,7 @@ class InstantiatorActorImpl(
 
     client.publishEvent("pubsub", "nodeCreated", mapOf("time" to nowNanos)).subscribe()
 
-    increment()
-    waitTurn()
-  }
-
-  private fun increment() {
     lastInstantiated += n
+    waitTurn()
   }
 }
